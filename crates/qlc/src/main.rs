@@ -54,6 +54,16 @@ enum Commands {
         json: bool,
     },
 
+    /// Parse a file and display AST (for debugging)
+    Parse {
+        /// Input .ql file
+        file: PathBuf,
+
+        /// Output as JSON
+        #[arg(long)]
+        json: bool,
+    },
+
     /// Format Quorlin source code
     Fmt {
         /// Input .ql file
@@ -82,6 +92,8 @@ fn main() {
         Commands::Check { file } => commands::check::run(file),
 
         Commands::Tokenize { file, json } => commands::tokenize::run(file, json),
+
+        Commands::Parse { file, json } => commands::parse::run(file, json),
 
         Commands::Fmt { file } => commands::fmt::run(file),
 

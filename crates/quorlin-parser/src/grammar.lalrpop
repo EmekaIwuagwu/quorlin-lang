@@ -1,0 +1,555 @@
+// grammar.lalrpop — LALRPOP grammar for Quorlin
+//
+// This grammar transforms token streams into Abstract Syntax Trees.
+// It handles Python-style indentation via INDENT/DEDENT tokens.
+
+use crate::ast::*;
+use quorlin_lexer::{TokenType, Span};
+
+grammar;
+
+// Note: This grammar has expected shift/reduce conflicts for elif/else handling
+// LALRPOP resolves these correctly by favoring shift (greedy matching)
+
+// ═══════════════════════════════════════════════════════════════════════
+// TOKEN MAPPING
+// ═══════════════════════════════════════════════════════════════════════
+
+// Map LALRPOP terminals to our TokenType enum
+extern {
+    type Location = usize;
+    type Error = String;
+
+    enum TokenType {
+        // Keywords
+        "def" => TokenType::Def,
+        "class" => TokenType::Class,
+        "if" => TokenType::If,
+        "elif" => TokenType::Elif,
+        "else" => TokenType::Else,
+        "for" => TokenType::For,
+        "while" => TokenType::While,
+        "in" => TokenType::In,
+        "return" => TokenType::Return,
+        "pass" => TokenType::Pass,
+        "break" => TokenType::Break,
+        "continue" => TokenType::Continue,
+        "and" => TokenType::And,
+        "or" => TokenType::Or,
+        "not" => TokenType::Not,
+        "True" => TokenType::True,
+        "False" => TokenType::False,
+        "None" => TokenType::None,
+        "self" => TokenType::SelfKw,
+        "from" => TokenType::From,
+        "import" => TokenType::Import,
+        "as" => TokenType::As,
+        "raise" => TokenType::Raise,
+
+        // Quorlin keywords
+        "contract" => TokenType::Contract,
+        "interface" => TokenType::Interface,
+        "struct" => TokenType::Struct,
+        "enum" => TokenType::Enum,
+        "event" => TokenType::Event,
+        "error" => TokenType::Error,
+        "const" => TokenType::Const,
+        "emit" => TokenType::Emit,
+        "require" => TokenType::Require,
+        "revert" => TokenType::Revert,
+        "indexed" => TokenType::Indexed,
+        "this" => TokenType::This,
+
+        // Type keywords
+        "bool" => TokenType::Bool,
+        "address" => TokenType::Address,
+        "str" => TokenType::Str,
+        "bytes" => TokenType::Bytes,
+        "mapping" => TokenType::Mapping,
+        "list" => TokenType::List,
+        "Optional" => TokenType::Optional,
+
+        // Literals and identifiers
+        ident => TokenType::Ident(<String>),
+        int_literal => TokenType::IntLiteral(<String>),
+        hex_literal => TokenType::HexLiteral(<String>),
+        string_literal => TokenType::StringLiteral(<String>),
+        string_literal_single => TokenType::StringLiteralSingle(<String>),
+        docstring => TokenType::DocString(<String>),
+        uint => TokenType::Uint(<String>),
+        int => TokenType::Int(<String>),
+        bytesn => TokenType::BytesN(<String>),
+
+        // Operators
+        "+" => TokenType::Plus,
+        "-" => TokenType::Minus,
+        "*" => TokenType::Star,
+        "/" => TokenType::Slash,
+        "//" => TokenType::FloorDiv,
+        "%" => TokenType::Percent,
+        "**" => TokenType::DoubleStar,
+
+        "==" => TokenType::EqEq,
+        "!=" => TokenType::NotEq,
+        "<" => TokenType::Lt,
+        "<=" => TokenType::LtEq,
+        ">" => TokenType::Gt,
+        ">=" => TokenType::GtEq,
+
+        "=" => TokenType::Eq,
+        "+=" => TokenType::PlusEq,
+        "-=" => TokenType::MinusEq,
+        "*=" => TokenType::StarEq,
+        "/=" => TokenType::SlashEq,
+
+        // Delimiters
+        "(" => TokenType::LParen,
+        ")" => TokenType::RParen,
+        "[" => TokenType::LBracket,
+        "]" => TokenType::RBracket,
+        "{" => TokenType::LBrace,
+        "}" => TokenType::RBrace,
+
+        ":" => TokenType::Colon,
+        "," => TokenType::Comma,
+        "." => TokenType::Dot,
+        "->" => TokenType::Arrow,
+        "@" => TokenType::At,
+
+        // Special tokens
+        newline => TokenType::Newline,
+        indent => TokenType::Indent,
+        dedent => TokenType::Dedent,
+        eof => TokenType::Eof,
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// MODULE & TOP-LEVEL ITEMS
+// ═══════════════════════════════════════════════════════════════════════
+
+pub Module: Module = {
+    <items:Item*> eof => Module { items }
+};
+
+Item: Item = {
+    ImportStmt => Item::Import(<>),
+    EventDecl => Item::Event(<>),
+    ErrorDecl => Item::Error(<>),
+    ContractDecl => Item::Contract(<>),
+    StructDecl => Item::Struct(<>),
+    EnumDecl => Item::Enum(<>),
+    InterfaceDecl => Item::Interface(<>),
+};
+
+// ═══════════════════════════════════════════════════════════════════════
+// IMPORT STATEMENTS
+// ═══════════════════════════════════════════════════════════════════════
+
+ImportStmt: ImportStmt = {
+    "from" <module:DottedName> "import" <items:ImportNames> Terminator => {
+        ImportStmt { module, items }
+    }
+};
+
+DottedName: String = {
+    <parts:Sep<ident, ".">> => parts.join(".")
+};
+
+ImportNames: Vec<String> = {
+    "*" => vec!["*".to_string()],
+    <Sep<ident, ",">> => <>
+};
+
+// ═══════════════════════════════════════════════════════════════════════
+// EVENT & ERROR DECLARATIONS
+// ═══════════════════════════════════════════════════════════════════════
+
+EventDecl: EventDecl = {
+    "event" <name:ident> "(" <params:Sep<EventParam, ",">> ")" Terminator => {
+        EventDecl { name, params }
+    }
+};
+
+EventParam: EventParam = {
+    <name:ident> ":" <type_annotation:Type> => {
+        EventParam { name, type_annotation, indexed: false }
+    },
+    "indexed" <name:ident> ":" <type_annotation:Type> => {
+        EventParam { name, type_annotation, indexed: true }
+    },
+};
+
+ErrorDecl: ErrorDecl = {
+    "error" <name:ident> "(" <params:Sep<Param, ",">> ")" Terminator => {
+        ErrorDecl { name, params }
+    }
+};
+
+// ═══════════════════════════════════════════════════════════════════════
+// CONTRACT DECLARATION
+// ═══════════════════════════════════════════════════════════════════════
+
+ContractDecl: ContractDecl = {
+    <docstring:docstring?> "contract" <name:ident> <bases:Bases?> ":" Terminator indent
+    <body:ContractMember+> dedent => {
+        ContractDecl {
+            name,
+            bases: bases.unwrap_or_default(),
+            body,
+            docstring,
+        }
+    }
+};
+
+Bases: Vec<String> = {
+    "(" <Sep<ident, ",">> ")" => <>
+};
+
+ContractMember: ContractMember = {
+    StateVar => ContractMember::StateVar(<>),
+    ConstantDecl => ContractMember::Constant(<>),
+    Function => ContractMember::Function(<>),
+    Terminator => { unreachable!() } // Skip empty lines
+};
+
+StateVar: StateVar = {
+    <name:ident> ":" <type_annotation:Type> <initial_value:("=" <Expr>)?> Terminator => {
+        StateVar { name, type_annotation, initial_value }
+    }
+};
+
+ConstantDecl: Constant = {
+    "const" <name:ident> ":" <type_annotation:Type> "=" <value:Expr> Terminator => {
+        Constant { name, type_annotation, value }
+    }
+};
+
+// ═══════════════════════════════════════════════════════════════════════
+// FUNCTION DEFINITION
+// ═══════════════════════════════════════════════════════════════════════
+
+Function: Function = {
+    <decorators:Decorator*> <docstring:docstring?> "def" <name:ident>
+    "(" <params:Sep<Param, ",">> ")" <return_type:("->" <Type>)?> ":" Terminator
+    indent <body:Stmt+> dedent => {
+        Function {
+            name,
+            decorators,
+            params,
+            return_type,
+            body,
+            docstring,
+        }
+    }
+};
+
+Decorator: String = {
+    "@" <ident> Terminator => <>
+};
+
+Param: Param = {
+    <name:ident> ":" <type_annotation:Type> <default:("=" <Expr>)?> => {
+        Param { name, type_annotation, default }
+    }
+};
+
+// ═══════════════════════════════════════════════════════════════════════
+// TYPE ANNOTATIONS
+// ═══════════════════════════════════════════════════════════════════════
+
+Type: Type = {
+    SimpleType => Type::Simple(<>),
+    "list" "[" <Type> "]" => Type::List(Box::new(<>)),
+    "Optional" "[" <Type> "]" => Type::Optional(Box::new(<>)),
+    "mapping" "[" <key:Type> "," <value:Type> "]" => {
+        Type::Mapping(Box::new(key), Box::new(value))
+    },
+    <t:SimpleType> "[" <size:int_literal> "]" => {
+        Type::FixedArray(Box::new(Type::Simple(t)), size.parse().unwrap())
+    },
+};
+
+SimpleType: String = {
+    "bool" => "bool".to_string(),
+    "address" => "address".to_string(),
+    "str" => "str".to_string(),
+    "bytes" => "bytes".to_string(),
+    uint => <>,
+    int => <>,
+    bytesn => <>,
+    ident => <>,
+};
+
+// ═══════════════════════════════════════════════════════════════════════
+// STATEMENTS
+// ═══════════════════════════════════════════════════════════════════════
+
+Stmt: Stmt = {
+    SimpleStmt Terminator => <>,
+    CompoundStmt => <>,
+};
+
+SimpleStmt: Stmt = {
+    AssignStmt => Stmt::Assign(<>),
+    AugAssignStmt => Stmt::AugAssign(<>),
+    <Expr> => Stmt::Expr(<>),
+    "return" <Expr?> => Stmt::Return(<>),
+    "pass" => Stmt::Pass,
+    "break" => Stmt::Break,
+    "continue" => Stmt::Continue,
+    RequireStmt => Stmt::Require(<>),
+    "revert" "(" <string_literal> ")" => Stmt::Revert(<>),
+    EmitStmt => Stmt::Emit(<>),
+    RaiseStmt => Stmt::Raise(<>),
+};
+
+AssignStmt: AssignStmt = {
+    <target:ident> <type_annotation:(":" <Type>)?> "=" <value:Expr> => {
+        AssignStmt { target, type_annotation, value }
+    }
+};
+
+AugAssignStmt: AugAssignStmt = {
+    <target:ident> "+=" <value:Expr> => {
+        AugAssignStmt { target, op: AugAssignOp::Add, value }
+    },
+    <target:ident> "-=" <value:Expr> => {
+        AugAssignStmt { target, op: AugAssignOp::Sub, value }
+    },
+    <target:ident> "*=" <value:Expr> => {
+        AugAssignStmt { target, op: AugAssignOp::Mul, value }
+    },
+    <target:ident> "/=" <value:Expr> => {
+        AugAssignStmt { target, op: AugAssignOp::Div, value }
+    },
+};
+
+RequireStmt: RequireStmt = {
+    "require" "(" <condition:Expr> <message:("," <string_literal>)?> ")" => {
+        RequireStmt { condition, message }
+    }
+};
+
+EmitStmt: EmitStmt = {
+    "emit" <event:ident> "(" <args:Sep<Expr, ",">> ")" => {
+        EmitStmt { event, args }
+    }
+};
+
+RaiseStmt: RaiseStmt = {
+    "raise" <error:ident> "(" <args:Sep<Expr, ",">> ")" => {
+        RaiseStmt { error, args }
+    }
+};
+
+CompoundStmt: Stmt = {
+    IfStmt => Stmt::If(<>),
+    ForStmt => Stmt::For(<>),
+    WhileStmt => Stmt::While(<>),
+};
+
+IfStmt: IfStmt = {
+    "if" <condition:Expr> ":" Terminator indent <then_branch:Stmt+> dedent
+    <elif_branches:ElifBranch*>
+    <else_branch:ElseBranch?> => {
+        IfStmt { condition, then_branch, elif_branches, else_branch }
+    }
+};
+
+ElifBranch: (Expr, Vec<Stmt>) = {
+    "elif" <condition:Expr> ":" Terminator indent <body:Stmt+> dedent => {
+        (condition, body)
+    }
+};
+
+ElseBranch: Vec<Stmt> = {
+    "else" ":" Terminator indent <Stmt+> dedent => <>
+};
+
+ForStmt: ForStmt = {
+    "for" <variable:ident> "in" <iterable:Expr> ":" Terminator
+    indent <body:Stmt+> dedent => {
+        ForStmt { variable, iterable, body }
+    }
+};
+
+WhileStmt: WhileStmt = {
+    "while" <condition:Expr> ":" Terminator
+    indent <body:Stmt+> dedent => {
+        WhileStmt { condition, body }
+    }
+};
+
+// ═══════════════════════════════════════════════════════════════════════
+// EXPRESSIONS
+// ═══════════════════════════════════════════════════════════════════════
+
+Expr: Expr = OrExpr;
+
+OrExpr: Expr = {
+    <left:OrExpr> "or" <right:AndExpr> => {
+        Expr::BinOp(Box::new(left), BinOp::Or, Box::new(right))
+    },
+    AndExpr,
+};
+
+AndExpr: Expr = {
+    <left:AndExpr> "and" <right:NotExpr> => {
+        Expr::BinOp(Box::new(left), BinOp::And, Box::new(right))
+    },
+    NotExpr,
+};
+
+NotExpr: Expr = {
+    "not" <NotExpr> => Expr::UnaryOp(UnaryOp::Not, Box::new(<>)),
+    ComparisonExpr,
+};
+
+ComparisonExpr: Expr = {
+    <left:ComparisonExpr> "==" <right:ArithExpr> => {
+        Expr::BinOp(Box::new(left), BinOp::Eq, Box::new(right))
+    },
+    <left:ComparisonExpr> "!=" <right:ArithExpr> => {
+        Expr::BinOp(Box::new(left), BinOp::NotEq, Box::new(right))
+    },
+    <left:ComparisonExpr> "<" <right:ArithExpr> => {
+        Expr::BinOp(Box::new(left), BinOp::Lt, Box::new(right))
+    },
+    <left:ComparisonExpr> "<=" <right:ArithExpr> => {
+        Expr::BinOp(Box::new(left), BinOp::LtEq, Box::new(right))
+    },
+    <left:ComparisonExpr> ">" <right:ArithExpr> => {
+        Expr::BinOp(Box::new(left), BinOp::Gt, Box::new(right))
+    },
+    <left:ComparisonExpr> ">=" <right:ArithExpr> => {
+        Expr::BinOp(Box::new(left), BinOp::GtEq, Box::new(right))
+    },
+    ArithExpr,
+};
+
+ArithExpr: Expr = {
+    <left:ArithExpr> "+" <right:Term> => {
+        Expr::BinOp(Box::new(left), BinOp::Add, Box::new(right))
+    },
+    <left:ArithExpr> "-" <right:Term> => {
+        Expr::BinOp(Box::new(left), BinOp::Sub, Box::new(right))
+    },
+    Term,
+};
+
+Term: Expr = {
+    <left:Term> "*" <right:Factor> => {
+        Expr::BinOp(Box::new(left), BinOp::Mul, Box::new(right))
+    },
+    <left:Term> "/" <right:Factor> => {
+        Expr::BinOp(Box::new(left), BinOp::Div, Box::new(right))
+    },
+    <left:Term> "//" <right:Factor> => {
+        Expr::BinOp(Box::new(left), BinOp::FloorDiv, Box::new(right))
+    },
+    <left:Term> "%" <right:Factor> => {
+        Expr::BinOp(Box::new(left), BinOp::Mod, Box::new(right))
+    },
+    Factor,
+};
+
+Factor: Expr = {
+    <left:Factor> "**" <right:Primary> => {
+        Expr::BinOp(Box::new(left), BinOp::Pow, Box::new(right))
+    },
+    "-" <Primary> => Expr::UnaryOp(UnaryOp::Neg, Box::new(<>)),
+    "+" <Primary> => Expr::UnaryOp(UnaryOp::Pos, Box::new(<>)),
+    Primary,
+};
+
+Primary: Expr = {
+    <base:Primary> "." <attr:ident> => {
+        Expr::Attribute(Box::new(base), attr)
+    },
+    <base:Primary> "[" <index:Expr> "]" => {
+        Expr::Index(Box::new(base), Box::new(index))
+    },
+    <func:Primary> "(" <args:Sep<Expr, ",">> ")" => {
+        Expr::Call(Box::new(func), args)
+    },
+    Atom,
+};
+
+Atom: Expr = {
+    int_literal => Expr::IntLiteral(<>),
+    hex_literal => Expr::HexLiteral(<>),
+    string_literal => Expr::StringLiteral(<>),
+    string_literal_single => Expr::StringLiteral(<>),
+    "True" => Expr::BoolLiteral(true),
+    "False" => Expr::BoolLiteral(false),
+    "None" => Expr::NoneLiteral,
+    ident => Expr::Ident(<>),
+    "self" => Expr::Ident("self".to_string()),
+    "(" <Expr> ")" => <>,
+    "[" <Sep<Expr, ",">> "]" => Expr::List(<>),
+};
+
+// ═══════════════════════════════════════════════════════════════════════
+// STRUCT & ENUM DECLARATIONS
+// ═══════════════════════════════════════════════════════════════════════
+
+StructDecl: StructDecl = {
+    "struct" <name:ident> ":" Terminator indent
+    <fields:StructField+> dedent => {
+        StructDecl { name, fields }
+    }
+};
+
+StructField: StructField = {
+    <name:ident> ":" <type_annotation:Type> Terminator => {
+        StructField { name, type_annotation }
+    }
+};
+
+EnumDecl: EnumDecl = {
+    "enum" <name:ident> ":" Terminator indent
+    <variants:EnumVariant+> dedent => {
+        EnumDecl { name, variants }
+    }
+};
+
+EnumVariant: String = {
+    <ident> Terminator => <>
+};
+
+// ═══════════════════════════════════════════════════════════════════════
+// INTERFACE DECLARATION
+// ═══════════════════════════════════════════════════════════════════════
+
+InterfaceDecl: InterfaceDecl = {
+    "interface" <name:ident> ":" Terminator indent
+    <functions:FunctionSignature+> dedent => {
+        InterfaceDecl { name, functions }
+    }
+};
+
+FunctionSignature: FunctionSignature = {
+    "def" <name:ident> "(" <params:Sep<Param, ",">> ")"
+    <return_type:("->" <Type>)?> Terminator => {
+        FunctionSignature { name, params, return_type }
+    }
+};
+
+// ═══════════════════════════════════════════════════════════════════════
+// UTILITIES
+// ═══════════════════════════════════════════════════════════════════════
+
+// Separator: match zero or more T separated by S
+Sep<T, S>: Vec<T> = {
+    <mut v:(<T> S)*> <e:T?> => match e {
+        None => v,
+        Some(e) => {
+            v.push(e);
+            v
+        }
+    }
+};
+
+// Terminator: newline or EOF
+Terminator = newline*;

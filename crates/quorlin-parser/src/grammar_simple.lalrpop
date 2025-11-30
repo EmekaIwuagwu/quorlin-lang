@@ -1,0 +1,209 @@
+// Simple Quorlin grammar - MVP version
+// This is a simplified grammar to get parsing working
+// We'll enhance it iteratively
+
+use crate::ast::*;
+use quorlin_lexer::TokenType;
+
+grammar;
+
+extern {
+    type Location = usize;
+    type Error = String;
+
+    enum TokenType {
+        "def" => TokenType::Def,
+        "contract" => TokenType::Contract,
+        "event" => TokenType::Event,
+        "error" => TokenType::Error,
+        "struct" => TokenType::Struct,
+        "enum" => TokenType::Enum,
+        "from" => TokenType::From,
+        "import" => TokenType::Import,
+        "return" => TokenType::Return,
+        "pass" => TokenType::Pass,
+        "True" => TokenType::True,
+        "False" => TokenType::False,
+        "None" => TokenType::None,
+        "self" => TokenType::SelfKw,
+
+        ident => TokenType::Ident(<String>),
+        int_literal => TokenType::IntLiteral(<String>),
+        string_literal => TokenType::StringLiteral(<String>),
+        uint => TokenType::Uint(<String>),
+        docstring => TokenType::DocString(<String>),
+
+        ":" => TokenType::Colon,
+        "," => TokenType::Comma,
+        "." => TokenType::Dot,
+        "(" => TokenType::LParen,
+        ")" => TokenType::RParen,
+        "[" => TokenType::LBracket,
+        "]" => TokenType::RBracket,
+        "=" => TokenType::Eq,
+        "->" => TokenType::Arrow,
+        "@" => TokenType::At,
+
+        "address" => TokenType::Address,
+        "str" => TokenType::Str,
+        "mapping" => TokenType::Mapping,
+        "list" => TokenType::List,
+        "bool" => TokenType::Bool,
+
+        newline => TokenType::Newline,
+        indent => TokenType::Indent,
+        dedent => TokenType::Dedent,
+        eof => TokenType::Eof,
+    }
+}
+
+pub Module: Module = {
+    <items:TopItem*> eof => Module { items }
+};
+
+TopItem: Item = {
+    ImportStmt => Item::Import(<>),
+    EventDecl => Item::Event(<>),
+    ErrorDecl => Item::Error(<>),
+    ContractDecl => Item::Contract(<>),
+};
+
+ImportStmt: ImportStmt = {
+    newline* "from" <module:DottedName> "import" <items:CommaSep<ident>> newline+ => {
+        ImportStmt { module, items }
+    }
+};
+
+DottedName: String = {
+    <parts:DotSep<ident>> => parts.join(".")
+};
+
+EventDecl: EventDecl = {
+    newline* "event" <name:ident> "(" <params:CommaSep<EventParam>> ")" newline+ => {
+        EventDecl { name, params }
+    }
+};
+
+EventParam: EventParam = {
+    <name:ident> ":" <type_annotation:Type> => {
+        EventParam { name, type_annotation, indexed: false }
+    }
+};
+
+ErrorDecl: ErrorDecl = {
+    newline* "error" <name:ident> "(" <params:CommaSep<Param>> ")" newline+ => {
+        ErrorDecl { name, params }
+    }
+};
+
+ContractDecl: ContractDecl = {
+    newline* <docstring:docstring?> newline* "contract" <name:ident> ":" newline+ indent
+    <body:ContractMember+> dedent => {
+        ContractDecl {
+            name,
+            bases: vec![],
+            body,
+            docstring,
+        }
+    }
+};
+
+ContractMember: ContractMember = {
+    StateVar => ContractMember::StateVar(<>),
+    Function => ContractMember::Function(<>),
+    newline+ => { ContractMember::StateVar(StateVar {
+        name: String::new(),
+        type_annotation: Type::Simple("void".to_string()),
+        initial_value: None
+    }) } // Skip empty lines
+};
+
+StateVar: StateVar = {
+    <name:ident> ":" <type_annotation:Type> <initial_value:("=" <SimpleExpr>)?> newline+ => {
+        StateVar { name, type_annotation, initial_value }
+    }
+};
+
+Function: Function = {
+    <decorators:Decorator*> <docstring:docstring?> newline* "def" <name:ident>
+    "(" <params:CommaSep<Param>> ")" <return_type:("->" <Type>)?> ":" newline+
+    indent <body:SimpleStmt+> dedent => {
+        Function {
+            name,
+            decorators,
+            params,
+            return_type,
+            body,
+            docstring,
+        }
+    }
+};
+
+Decorator: String = {
+    "@" <ident> newline* => <>
+};
+
+Param: Param = {
+    <name:ident> ":" <type_annotation:Type> => {
+        Param { name, type_annotation, default: None }
+    }
+};
+
+Type: Type = {
+    SimpleType => Type::Simple(<>),
+    "mapping" "[" <key:Type> "," <value:Type> "]" => {
+        Type::Mapping(Box::new(key), Box::new(value))
+    },
+    "list" "[" <Type> "]" => Type::List(Box::new(<>)),
+};
+
+SimpleType: String = {
+    "bool" => "bool".to_string(),
+    "address" => "address".to_string(),
+    "str" => "str".to_string(),
+    uint => <>,
+    ident => <>,
+};
+
+SimpleStmt: Stmt = {
+    "return" <SimpleExpr> newline+ => Stmt::Return(Some(<>)),
+    "return" newline+ => Stmt::Return(None),
+    "pass" newline+ => Stmt::Pass,
+    <target:ident> "=" <value:SimpleExpr> newline+ => {
+        Stmt::Assign(AssignStmt {
+            target,
+            type_annotation: None,
+            value
+        })
+    },
+};
+
+SimpleExpr: Expr = {
+    int_literal => Expr::IntLiteral(<>),
+    string_literal => Expr::StringLiteral(<>),
+    "True" => Expr::BoolLiteral(true),
+    "False" => Expr::BoolLiteral(false),
+    "None" => Expr::NoneLiteral,
+    ident => Expr::Ident(<>),
+    <base:ident> "." <attr:ident> => {
+        Expr::Attribute(Box::new(Expr::Ident(base)), attr)
+    },
+};
+
+// Utilities
+CommaSep<T>: Vec<T> = {
+    <mut v:(<T> ",")*> <e:T?> => match e {
+        None => v,
+        Some(e) => {
+            v.push(e);
+            v
+        }
+    }
+};
+
+DotSep<T>: Vec<T> = {
+    <mut v:(<T> ".")*> <e:T> => {
+        v.push(e);
+        v
+    }
+};
