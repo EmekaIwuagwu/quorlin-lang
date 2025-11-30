@@ -7,5 +7,7 @@ description = "Solana BPF code generator for Quorlin"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
+quorlin-parser = { path = "../quorlin-parser" }
 quorlin-ir = { path = "../quorlin-ir" }
 quorlin-common = { path = "../quorlin-common" }
+thiserror = { workspace = true }
