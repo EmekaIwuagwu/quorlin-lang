@@ -272,10 +272,10 @@ raise InsufficientBalance(balance, amount)
 
 ## 📖 Documentation
 
-- **[Language Reference](docs/book/src/language-reference/)** — Complete Quorlin syntax guide
-- **[Standard Library](docs/book/src/stdlib/)** — Built-in functions and utilities
-- **[Tutorials](docs/book/src/tutorials/)** — Learn by building real contracts
-- **[Architecture](ARCHITECTURE.md)** — Deep dive into compiler internals
+- **[Language Reference](Documentations/LANGUAGE_REFERENCE.md)** — Complete Quorlin syntax guide
+- **[Standard Library](Documentations/STDLIB_REFERENCE.md)** — Built-in functions and utilities
+- **[Tutorials](Documentations/TUTORIALS.md)** — Learn by building real contracts
+- **[Architecture](Documentations/ARCHITECTURE.md)** — Deep dive into compiler internals
 
 ## 🛠️ Development Status
 
