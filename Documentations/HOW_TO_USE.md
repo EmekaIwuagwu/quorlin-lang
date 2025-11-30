@@ -173,7 +173,7 @@ contract Token:
     total_supply: uint256
 
     @external
-    def transfer(to: address, amount: uint256) -> bool:
+    fn transfer(to: address, amount: uint256) -> bool:
         self.balances[msg.sender] = safe_sub(self.balances[msg.sender], amount)
         self.balances[to] = safe_add(self.balances[to], amount)
         emit Transfer(msg.sender, to, amount)

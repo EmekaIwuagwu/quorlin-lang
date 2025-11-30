@@ -43,13 +43,13 @@ contract Token:
     balances: mapping[address, uint256]
 
     @constructor
-    def __init__(initial_supply: uint256):
+    fn __init__(initial_supply: uint256):
         self.total_supply = initial_supply
         self.balances[msg.sender] = initial_supply
         emit Transfer(address(0), msg.sender, initial_supply)
 
     @external
-    def transfer(to: address, amount: uint256) -> bool:
+    fn transfer(to: address, amount: uint256) -> bool:
         """Transfer tokens to another address."""
         require(self.balances[msg.sender] >= amount, "Insufficient balance")
         require(to != address(0), "Cannot send to zero address")
@@ -61,7 +61,7 @@ contract Token:
         return True
 
     @view
-    def balance_of(owner: address) -> uint256:
+    fn balance_of(owner: address) -> uint256:
         """Get token balance."""
         return self.balances[owner]
 ```
@@ -97,7 +97,7 @@ cd my-token
 contract MyToken:
     balances: mapping[address, uint256]
 
-    def transfer(to: address, amount: uint256) -> bool:
+    fn transfer(to: address, amount: uint256) -> bool:
         self.balances[msg.sender] -= amount
         self.balances[to] += amount
         return True
@@ -115,6 +115,95 @@ qlc compile contract.ql --target solana -o token_program/
 qlc compile contract.ql --target ink -o token.contract
 ```
 
+## 🚢 Deploying to Blockchains
+
+Quorlin compiles to native code for each platform. Here's how to deploy:
+
+### Deploy to Ethereum/EVM
+
+```bash
+# 1. Compile Quorlin to Yul
+./target/release/qlc compile contract.ql --target evm -o token.yul
+
+# 2. Compile Yul to bytecode with solc
+solc --strict-assembly token.yul --bin --optimize -o build/
+
+# 3. Deploy using Hardhat
+npx hardhat run scripts/deploy.js --network sepolia
+```
+
+**Detailed Steps:**
+1. Install Solidity compiler: `npm install -g solc`
+2. Set up Hardhat project: `npx hardhat`
+3. Create deployment script with bytecode from `build/token.bin`
+4. Configure network in `hardhat.config.js`
+5. Deploy: `npx hardhat run scripts/deploy.js --network <network>`
+
+**Supported Networks:** Ethereum, Polygon, BSC, Arbitrum, Optimism, and all EVM chains
+
+### Deploy to Solana
+
+```bash
+# 1. Compile Quorlin to Anchor/Rust
+./target/release/qlc compile contract.ql --target solana -o token.rs
+
+# 2. Create Anchor project
+anchor init token_program
+cp token.rs programs/token_program/src/lib.rs
+
+# 3. Build Solana program
+anchor build
+
+# 4. Deploy to Solana
+anchor deploy
+```
+
+**Detailed Steps:**
+1. Install Solana CLI: `sh -c "$(curl -sSfL https://release.solana.com/stable/install)"`
+2. Install Anchor: `cargo install --git https://github.com/coral-xyz/anchor avm --locked --force`
+3. Configure network: `solana config set --url devnet`
+4. Fund wallet: `solana airdrop 2` (devnet only)
+5. Deploy: `anchor deploy`
+
+**Supported Networks:** Devnet, Testnet, Mainnet-beta
+
+### Deploy to Polkadot
+
+```bash
+# 1. Compile Quorlin to ink!
+./target/release/qlc compile contract.ql --target ink -o token.rs
+
+# 2. Create ink! project
+cargo contract new token_contract
+cp token.rs token_contract/lib.rs
+
+# 3. Build contract
+cd token_contract && cargo contract build --release
+
+# 4. Deploy using cargo-contract
+cargo contract instantiate --constructor new --args 1000000
+```
+
+**Detailed Steps:**
+1. Install cargo-contract: `cargo install cargo-contract --force`
+2. Add wasm target: `rustup target add wasm32-unknown-unknown`
+3. Build contract: `cargo contract build --release`
+4. Deploy via Polkadot.js UI or CLI
+5. Interact using `@polkadot/api-contract`
+
+**Supported Networks:** Local substrate node, Contracts on Rococo, Astar, Phala, Aleph Zero
+
+### Complete Deployment Guide
+
+For comprehensive step-by-step deployment instructions including:
+- Setting up development environments
+- Testing before deployment
+- Gas/cost optimization
+- Verification and monitoring
+- Troubleshooting common issues
+
+**See:** [Documentations/DEPLOYMENT_GUIDE.md](Documentations/DEPLOYMENT_GUIDE.md)
+
 ## 📚 Language Features
 
 ### Python-Compatible Syntax
@@ -123,7 +212,7 @@ Quorlin uses Python syntax wherever possible:
 
 | Feature | Works exactly like Python? |
 |---------|---------------------------|
-| `def function():` | ✅ Yes |
+| `fn function():` | ✅ Yes |
 | `if/elif/else` | ✅ Yes |
 | `for i in range(10):` | ✅ Yes |
 | `self.variable` | ✅ Yes |

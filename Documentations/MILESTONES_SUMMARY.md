@@ -7,7 +7,7 @@ This document tracks the completion status of all Quorlin development milestones
 **Goal:** Tokenize Quorlin source code with Python-style indentation
 
 ### Completed Features
-- ✅ Token definitions for all keywords (`contract`, `def`, `if`, `for`, etc.)
+- ✅ Token definitions for all keywords (`contract`, `fn`, `if`, `for`, etc.)
 - ✅ Python-style INDENT/DEDENT handling
 - ✅ Literal support (integers, hex, strings, docstrings)
 - ✅ Operator and punctuation recognition

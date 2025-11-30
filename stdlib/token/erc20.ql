@@ -11,47 +11,47 @@ interface IERC20:
     """Standard ERC-20 token interface."""
 
     @view
-    def name() -> str:
+    fn name() -> str:
         """Returns the name of the token."""
         pass
 
     @view
-    def symbol() -> str:
+    fn symbol() -> str:
         """Returns the symbol of the token."""
         pass
 
     @view
-    def decimals() -> uint8:
+    fn decimals() -> uint8:
         """Returns the number of decimals the token uses."""
         pass
 
     @view
-    def total_supply() -> uint256:
+    fn total_supply() -> uint256:
         """Returns the total token supply."""
         pass
 
     @view
-    def balance_of(account: address) -> uint256:
+    fn balance_of(account: address) -> uint256:
         """Returns the account balance."""
         pass
 
     @external
-    def transfer(to: address, amount: uint256) -> bool:
+    fn transfer(to: address, amount: uint256) -> bool:
         """Moves amount tokens to recipient."""
         pass
 
     @view
-    def allowance(owner: address, spender: address) -> uint256:
+    fn allowance(owner: address, spender: address) -> uint256:
         """Returns the remaining number of tokens spender is allowed to spend."""
         pass
 
     @external
-    def approve(spender: address, amount: uint256) -> bool:
+    fn approve(spender: address, amount: uint256) -> bool:
         """Sets amount as the allowance of spender."""
         pass
 
     @external
-    def transfer_from(from_addr: address, to: address, amount: uint256) -> bool:
+    fn transfer_from(from_addr: address, to: address, amount: uint256) -> bool:
         """Moves amount tokens from sender to recipient using allowance."""
         pass
 
@@ -70,7 +70,7 @@ contract ERC20:
     _allowances: mapping[address, mapping[address, uint256]]
 
     @constructor
-    def __init__(name: str, symbol: str, decimals: uint8):
+    fn __init__(name: str, symbol: str, decimals: uint8):
         """Initialize the token with name, symbol, and decimals."""
         self._name = name
         self._symbol = symbol
@@ -78,57 +78,57 @@ contract ERC20:
 
     # View functions
     @view
-    def name() -> str:
+    fn name() -> str:
         """Returns the name of the token."""
         return self._name
 
     @view
-    def symbol() -> str:
+    fn symbol() -> str:
         """Returns the symbol of the token."""
         return self._symbol
 
     @view
-    def decimals() -> uint8:
+    fn decimals() -> uint8:
         """Returns the number of decimals."""
         return self._decimals
 
     @view
-    def total_supply() -> uint256:
+    fn total_supply() -> uint256:
         """Returns the total supply."""
         return self._total_supply
 
     @view
-    def balance_of(account: address) -> uint256:
+    fn balance_of(account: address) -> uint256:
         """Returns the balance of an account."""
         return self._balances[account]
 
     @view
-    def allowance(owner: address, spender: address) -> uint256:
+    fn allowance(owner: address, spender: address) -> uint256:
         """Returns the allowance."""
         return self._allowances[owner][spender]
 
     # External functions
     @external
-    def transfer(to: address, amount: uint256) -> bool:
+    fn transfer(to: address, amount: uint256) -> bool:
         """Transfer tokens to another address."""
         self._transfer(msg.sender, to, amount)
         return True
 
     @external
-    def approve(spender: address, amount: uint256) -> bool:
+    fn approve(spender: address, amount: uint256) -> bool:
         """Approve spender to transfer tokens."""
         self._approve(msg.sender, spender, amount)
         return True
 
     @external
-    def transfer_from(from_addr: address, to: address, amount: uint256) -> bool:
+    fn transfer_from(from_addr: address, to: address, amount: uint256) -> bool:
         """Transfer tokens from one address to another using allowance."""
         self._spend_allowance(from_addr, msg.sender, amount)
         self._transfer(from_addr, to, amount)
         return True
 
     # Internal functions
-    def _transfer(from_addr: address, to: address, amount: uint256):
+    fn _transfer(from_addr: address, to: address, amount: uint256):
         """Internal transfer function."""
         require(from_addr != address(0), "ERC20: transfer from zero address")
         require(to != address(0), "ERC20: transfer to zero address")
@@ -141,7 +141,7 @@ contract ERC20:
 
         emit Transfer(from_addr, to, amount)
 
-    def _mint(account: address, amount: uint256):
+    fn _mint(account: address, amount: uint256):
         """Internal function to create tokens."""
         require(account != address(0), "ERC20: mint to zero address")
 
@@ -150,7 +150,7 @@ contract ERC20:
 
         emit Transfer(address(0), account, amount)
 
-    def _burn(account: address, amount: uint256):
+    fn _burn(account: address, amount: uint256):
         """Internal function to destroy tokens."""
         require(account != address(0), "ERC20: burn from zero address")
 
@@ -162,7 +162,7 @@ contract ERC20:
 
         emit Transfer(account, address(0), amount)
 
-    def _approve(owner: address, spender: address, amount: uint256):
+    fn _approve(owner: address, spender: address, amount: uint256):
         """Internal function to set allowance."""
         require(owner != address(0), "ERC20: approve from zero address")
         require(spender != address(0), "ERC20: approve to zero address")
@@ -170,7 +170,7 @@ contract ERC20:
         self._allowances[owner][spender] = amount
         emit Approval(owner, spender, amount)
 
-    def _spend_allowance(owner: address, spender: address, amount: uint256):
+    fn _spend_allowance(owner: address, spender: address, amount: uint256):
         """Internal function to update allowance."""
         current_allowance: uint256 = self.allowance(owner, spender)
         require(current_allowance >= amount, "ERC20: insufficient allowance")

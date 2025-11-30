@@ -300,7 +300,7 @@ contract MyToken(Ownable):
     balances: mapping[address, uint256]
 
     @external
-    def transfer(to: address, amount: uint256):
+    fn transfer(to: address, amount: uint256):
         self._only_owner()  # From Ownable
         self.balances[to] = safe_add(self.balances[to], amount)  # From std.math
 ```

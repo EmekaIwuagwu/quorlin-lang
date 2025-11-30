@@ -22,36 +22,36 @@ contract AccessControl:
     role_admins: mapping[bytes32, bytes32]
 
     @constructor
-    def __init__():
+    fn __init__():
         """Initialize with deployer having default admin role."""
         self._grant_role(self.DEFAULT_ADMIN_ROLE, msg.sender)
 
     # Internal functions
-    def _has_role(role: bytes32, account: address) -> bool:
+    fn _has_role(role: bytes32, account: address) -> bool:
         """Returns true if account has been granted role."""
         return self.roles[role][account]
 
-    def _check_role(role: bytes32):
+    fn _check_role(role: bytes32):
         """Revert if sender doesn't have role."""
         require(self._has_role(role, msg.sender), "AccessControl: account missing role")
 
-    def _get_role_admin(role: bytes32) -> bytes32:
+    fn _get_role_admin(role: bytes32) -> bytes32:
         """Returns the admin role that controls role."""
         return self.role_admins[role]
 
-    def _grant_role(role: bytes32, account: address):
+    fn _grant_role(role: bytes32, account: address):
         """Internal function to grant role to account."""
         if not self._has_role(role, account):
             self.roles[role][account] = True
             emit RoleGranted(role, account, msg.sender)
 
-    def _revoke_role(role: bytes32, account: address):
+    fn _revoke_role(role: bytes32, account: address):
         """Internal function to revoke role from account."""
         if self._has_role(role, account):
             self.roles[role][account] = False
             emit RoleRevoked(role, account, msg.sender)
 
-    def _set_role_admin(role: bytes32, admin_role: bytes32):
+    fn _set_role_admin(role: bytes32, admin_role: bytes32):
         """Internal function to set admin role."""
         previous_admin: bytes32 = self._get_role_admin(role)
         self.role_admins[role] = admin_role
@@ -59,17 +59,17 @@ contract AccessControl:
 
     # Public functions
     @view
-    def has_role(role: bytes32, account: address) -> bool:
+    fn has_role(role: bytes32, account: address) -> bool:
         """Returns true if account has been granted role."""
         return self._has_role(role, account)
 
     @view
-    def get_role_admin(role: bytes32) -> bytes32:
+    fn get_role_admin(role: bytes32) -> bytes32:
         """Returns the admin role that controls role."""
         return self._get_role_admin(role)
 
     @external
-    def grant_role(role: bytes32, account: address):
+    fn grant_role(role: bytes32, account: address):
         """
         Grants role to account.
         Caller must have role's admin role.
@@ -78,7 +78,7 @@ contract AccessControl:
         self._grant_role(role, account)
 
     @external
-    def revoke_role(role: bytes32, account: address):
+    fn revoke_role(role: bytes32, account: address):
         """
         Revokes role from account.
         Caller must have role's admin role.
@@ -87,7 +87,7 @@ contract AccessControl:
         self._revoke_role(role, account)
 
     @external
-    def renounce_role(role: bytes32):
+    fn renounce_role(role: bytes32):
         """
         Revokes role from the calling account.
         Allows users to renounce unwanted roles.

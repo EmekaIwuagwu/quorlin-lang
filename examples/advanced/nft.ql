@@ -26,45 +26,45 @@ contract NFT(Ownable):
     token_uris: mapping[uint256, str]
 
     @constructor
-    def __init__():
+    fn __init__():
         """Initialize the NFT contract."""
         Ownable.__init__()
         self.total_supply = 0
 
     # View functions
     @view
-    def balance_of(owner: address) -> uint256:
+    fn balance_of(owner: address) -> uint256:
         """Get the number of tokens owned by an address."""
         require(owner != address(0), "NFT: balance query for zero address")
         return self.balances[owner]
 
     @view
-    def owner_of(token_id: uint256) -> address:
+    fn owner_of(token_id: uint256) -> address:
         """Get the owner of a token."""
         owner: address = self.owners[token_id]
         require(owner != address(0), "NFT: owner query for nonexistent token")
         return owner
 
     @view
-    def get_approved(token_id: uint256) -> address:
+    fn get_approved(token_id: uint256) -> address:
         """Get the approved address for a token."""
         require(self._exists(token_id), "NFT: approved query for nonexistent token")
         return self.token_approvals[token_id]
 
     @view
-    def is_approved_for_all(owner: address, operator: address) -> bool:
+    fn is_approved_for_all(owner: address, operator: address) -> bool:
         """Check if operator is approved for all tokens of owner."""
         return self.operator_approvals[owner][operator]
 
     @view
-    def token_uri(token_id: uint256) -> str:
+    fn token_uri(token_id: uint256) -> str:
         """Get the URI for a token."""
         require(self._exists(token_id), "NFT: URI query for nonexistent token")
         return self.token_uris[token_id]
 
     # External functions
     @external
-    def approve(to: address, token_id: uint256):
+    fn approve(to: address, token_id: uint256):
         """Approve an address to transfer a specific token."""
         owner: address = self.owner_of(token_id)
         require(to != owner, "NFT: approval to current owner")
@@ -76,14 +76,14 @@ contract NFT(Ownable):
         self._approve(to, token_id)
 
     @external
-    def set_approval_for_all(operator: address, approved: bool):
+    fn set_approval_for_all(operator: address, approved: bool):
         """Approve or revoke operator for all tokens."""
         require(operator != msg.sender, "NFT: approve to caller")
         self.operator_approvals[msg.sender][operator] = approved
         emit ApprovalForAll(msg.sender, operator, approved)
 
     @external
-    def transfer_from(from_addr: address, to: address, token_id: uint256):
+    fn transfer_from(from_addr: address, to: address, token_id: uint256):
         """Transfer a token from one address to another."""
         require(
             self._is_approved_or_owner(msg.sender, token_id),
@@ -92,13 +92,13 @@ contract NFT(Ownable):
         self._transfer(from_addr, to, token_id)
 
     @external
-    def safe_transfer_from(from_addr: address, to: address, token_id: uint256):
+    fn safe_transfer_from(from_addr: address, to: address, token_id: uint256):
         """Safely transfer a token (checks receiver)."""
         self.transfer_from(from_addr, to, token_id)
         # TODO: Add receiver check for contracts
 
     @external
-    def mint(to: address, token_id: uint256, uri: str):
+    fn mint(to: address, token_id: uint256, uri: str):
         """Mint a new token (only owner)."""
         self._only_owner()
         require(to != address(0), "NFT: mint to zero address")
@@ -112,7 +112,7 @@ contract NFT(Ownable):
         emit Transfer(address(0), to, token_id)
 
     @external
-    def burn(token_id: uint256):
+    fn burn(token_id: uint256):
         """Burn a token."""
         require(
             self._is_approved_or_owner(msg.sender, token_id),
@@ -129,11 +129,11 @@ contract NFT(Ownable):
         emit Transfer(owner, address(0), token_id)
 
     # Internal functions
-    def _exists(token_id: uint256) -> bool:
+    fn _exists(token_id: uint256) -> bool:
         """Check if a token exists."""
         return self.owners[token_id] != address(0)
 
-    def _is_approved_or_owner(spender: address, token_id: uint256) -> bool:
+    fn _is_approved_or_owner(spender: address, token_id: uint256) -> bool:
         """Check if spender is owner or approved for token."""
         require(self._exists(token_id), "NFT: operator query for nonexistent token")
         owner: address = self.owner_of(token_id)
@@ -143,7 +143,7 @@ contract NFT(Ownable):
             self.is_approved_for_all(owner, spender)
         )
 
-    def _transfer(from_addr: address, to: address, token_id: uint256):
+    fn _transfer(from_addr: address, to: address, token_id: uint256):
         """Internal transfer function."""
         require(self.owner_of(token_id) == from_addr, "NFT: transfer from incorrect owner")
         require(to != address(0), "NFT: transfer to zero address")
@@ -156,7 +156,7 @@ contract NFT(Ownable):
 
         emit Transfer(from_addr, to, token_id)
 
-    def _approve(to: address, token_id: uint256):
+    fn _approve(to: address, token_id: uint256):
         """Internal approve function."""
         self.token_approvals[token_id] = to
         emit Approval(self.owner_of(token_id), to, token_id)

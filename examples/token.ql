@@ -31,7 +31,7 @@ contract Token:
     # ════════════════════════════════════════════════════════════
 
     @constructor
-    def __init__(initial_supply: uint256):
+    fn __init__(initial_supply: uint256):
         """Initialize token with supply going to deployer."""
         self.total_supply = initial_supply
         self.balances[msg.sender] = initial_supply
@@ -42,7 +42,7 @@ contract Token:
     # ════════════════════════════════════════════════════════════
 
     @external
-    def transfer(to: address, amount: uint256) -> bool:
+    fn transfer(to: address, amount: uint256) -> bool:
         """Transfer tokens to another address."""
         require(self.balances[msg.sender] >= amount, "Insufficient balance")
         require(to != address(0), "Cannot send to zero address")
@@ -54,7 +54,7 @@ contract Token:
         return True
 
     @external
-    def approve(spender: address, amount: uint256) -> bool:
+    fn approve(spender: address, amount: uint256) -> bool:
         """Approve spender to transfer tokens on your behalf."""
         require(spender != address(0), "Cannot approve zero address")
 
@@ -64,7 +64,7 @@ contract Token:
         return True
 
     @external
-    def transfer_from(from_addr: address, to: address, amount: uint256) -> bool:
+    fn transfer_from(from_addr: address, to: address, amount: uint256) -> bool:
         """Transfer tokens from one address to another (requires approval)."""
         require(self.balances[from_addr] >= amount, "Insufficient balance")
         require(self.allowances[from_addr][msg.sender] >= amount, "Insufficient allowance")
@@ -82,16 +82,16 @@ contract Token:
     # ════════════════════════════════════════════════════════════
 
     @view
-    def balance_of(owner: address) -> uint256:
+    fn balance_of(owner: address) -> uint256:
         """Get token balance of an address."""
         return self.balances[owner]
 
     @view
-    def allowance(owner: address, spender: address) -> uint256:
+    fn allowance(owner: address, spender: address) -> uint256:
         """Get spending allowance."""
         return self.allowances[owner][spender]
 
     @view
-    def get_total_supply() -> uint256:
+    fn get_total_supply() -> uint256:
         """Get total token supply."""
         return self.total_supply
