@@ -1,0 +1,11 @@
+[package]
+name = "quorlin-codegen-ink"
+version = "0.1.0"
+edition = "2021"
+authors = ["Quorlin Contributors"]
+description = "ink! Wasm code generator for Quorlin"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+quorlin-ir = { path = "../quorlin-ir" }
+quorlin-common = { path = "../quorlin-common" }

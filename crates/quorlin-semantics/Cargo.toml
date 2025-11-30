@@ -1,0 +1,12 @@
+[package]
+name = "quorlin-semantics"
+version = "0.1.0"
+edition = "2021"
+authors = ["Quorlin Contributors"]
+description = "Semantic analysis for the Quorlin compiler"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+quorlin-parser = { path = "../quorlin-parser" }
+quorlin-common = { path = "../quorlin-common" }
+thiserror = { workspace = true }

@@ -1,0 +1,13 @@
+[package]
+name = "quorlin-codegen-evm"
+version = "0.1.0"
+edition = "2021"
+authors = ["Quorlin Contributors"]
+description = "EVM bytecode generator for Quorlin"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+quorlin-ir = { path = "../quorlin-ir" }
+quorlin-common = { path = "../quorlin-common" }
+serde = { workspace = true }
+serde_json = { workspace = true }

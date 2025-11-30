@@ -1,0 +1,20 @@
+[package]
+name = "qlc"
+version = "0.1.0"
+edition = "2021"
+authors = ["Quorlin Contributors"]
+description = "The Quorlin smart contract language compiler"
+license = "MIT OR Apache-2.0"
+
+[[bin]]
+name = "qlc"
+path = "src/main.rs"
+
+[dependencies]
+quorlin-lexer = { path = "../quorlin-lexer" }
+quorlin-parser = { path = "../quorlin-parser" }
+quorlin-common = { path = "../quorlin-common" }
+clap = { workspace = true }
+colored = { workspace = true }
+miette = { workspace = true }
+serde_json = { workspace = true }

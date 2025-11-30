@@ -1,0 +1,20 @@
+[package]
+name = "quorlin-parser"
+version = "0.1.0"
+edition = "2021"
+authors = ["Quorlin Contributors"]
+description = "Parser for the Quorlin smart contract language"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+quorlin-lexer = { path = "../quorlin-lexer" }
+quorlin-common = { path = "../quorlin-common" }
+lalrpop-util = { workspace = true }
+thiserror = { workspace = true }
+serde = { workspace = true }
+
+[build-dependencies]
+lalrpop = { workspace = true }
+
+[dev-dependencies]
+insta = { workspace = true }
