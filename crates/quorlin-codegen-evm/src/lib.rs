@@ -310,6 +310,57 @@ impl EvmCodegen {
             Stmt::Pass => {
                 code.push_str(&format!("{}// pass\n", indent_str));
             }
+            Stmt::If(if_stmt) => {
+                // Generate if statement
+                let cond_code = self.generate_expression(&if_stmt.condition)?;
+                code.push_str(&format!("{}if {} {{\n", indent_str, cond_code));
+
+                // Then branch
+                for stmt in &if_stmt.then_branch {
+                    code.push_str(&self.generate_statement(stmt, indent + 2)?);
+                }
+
+                // Elif branches
+                for (elif_cond, elif_body) in &if_stmt.elif_branches {
+                    let elif_cond_code = self.generate_expression(elif_cond)?;
+                    code.push_str(&format!("{}}}\n", indent_str));
+                    code.push_str(&format!("{}if {} {{\n", indent_str, elif_cond_code));
+                    for stmt in elif_body {
+                        code.push_str(&self.generate_statement(stmt, indent + 2)?);
+                    }
+                }
+
+                // Else branch
+                if let Some(else_body) = &if_stmt.else_branch {
+                    code.push_str(&format!("{}}}\n", indent_str));
+                    code.push_str(&format!("{}// else\n", indent_str));
+                    code.push_str(&format!("{}{{\n", indent_str));
+                    for stmt in else_body {
+                        code.push_str(&self.generate_statement(stmt, indent + 2)?);
+                    }
+                }
+
+                code.push_str(&format!("{}}}\n", indent_str));
+            }
+            Stmt::While(while_stmt) => {
+                // Generate while loop (using Yul's for loop with no init/post)
+                let cond_code = self.generate_expression(&while_stmt.condition)?;
+                code.push_str(&format!("{}for {{}} {} {{}}\n", indent_str, cond_code));
+                code.push_str(&format!("{}{{\n", indent_str));
+
+                for stmt in &while_stmt.body {
+                    code.push_str(&self.generate_statement(stmt, indent + 2)?);
+                }
+
+                code.push_str(&format!("{}}}\n", indent_str));
+            }
+            Stmt::For(for_stmt) => {
+                // Generate for loop
+                // for i in range(n): ... → for { let i := 0 } lt(i, n) { i := add(i, 1) } { ... }
+                // This is a simplified version - full implementation would handle iterables properly
+                code.push_str(&format!("{}// for {} in ... (simplified)\n", indent_str, for_stmt.variable));
+                code.push_str(&format!("{}// TODO: Proper for loop implementation\n", indent_str));
+            }
             _ => {
                 return Err(CodegenError::UnsupportedFeature(format!("{:?}", stmt)));
             }
