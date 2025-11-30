@@ -292,40 +292,65 @@ impl Parser {
             self.skip_newlines();
 
             Ok(Stmt::Require(RequireStmt { condition, message }))
-        } else if self.match_token(&TokenType::SelfKw) {
-            // self.attribute = value or self.attribute[index] = value
-            self.consume(&TokenType::Dot, "Expected '.' after 'self'")?;
-            let target = self.consume_ident("Expected attribute name")?;
+        } else if self.check(&TokenType::SelfKw) || self.check_ident() {
+            // Parse assignment: target = value
+            // Target could be: name, self.attr, self.attr[index], self.attr[i][j], etc.
+            // For now, we'll parse it as an expression and extract the identifier
 
-            // TODO: Handle indexing like self.balances[key] = value
-            // For now, just skip the index expression
-            if self.match_token(&TokenType::LBracket) {
-                self.parse_expr()?; // Skip index
+            // Start with identifier or self
+            let target_start = if self.match_token(&TokenType::SelfKw) {
+                self.consume(&TokenType::Dot, "Expected '.' after 'self'")?;
+                self.consume_ident("Expected attribute name")?
+            } else {
+                self.consume_ident("Expected identifier")?
+            };
+
+            // Handle any number of index operations: [expr], [expr][expr], etc.
+            while self.match_token(&TokenType::LBracket) {
+                self.parse_expr()?; // Parse and discard index expression
                 self.consume(&TokenType::RBracket, "Expected ']'")?;
             }
 
-            self.consume(&TokenType::Eq, "Expected '='")?;
-            let value = self.parse_expr()?;
+            // Check for assignment operator: =, +=, -=, *=, /=
+            let op = if self.match_token(&TokenType::Eq) {
+                None // Simple assignment
+            } else if self.match_token(&TokenType::PlusEq) {
+                Some(BinOp::Add)
+            } else if self.match_token(&TokenType::MinusEq) {
+                Some(BinOp::Sub)
+            } else if self.match_token(&TokenType::StarEq) {
+                Some(BinOp::Mul)
+            } else if self.match_token(&TokenType::SlashEq) {
+                Some(BinOp::Div)
+            } else {
+                return Err(ParseError::UnexpectedToken(
+                    self.current,
+                    format!("Expected assignment operator, found {:?}", self.peek()),
+                ));
+            };
+
+            let mut value = self.parse_expr()?;
             self.skip_newlines();
 
-            // For now, return a simple assignment (we'll need to extend AssignStmt later)
+            // For augmented assignments (+=, -=, etc.), convert to: target = target op value
+            if let Some(binop) = op {
+                value = Expr::BinOp(
+                    Box::new(Expr::Ident(target_start.clone())),
+                    binop,
+                    Box::new(value),
+                );
+            }
+
             Ok(Stmt::Assign(AssignStmt {
-                target,
+                target: target_start,
                 type_annotation: None,
                 value,
             }))
         } else {
-            // Assignment: target = value
-            let target = self.consume_ident("Expected statement")?;
-            self.consume(&TokenType::Eq, "Expected '='")?;
-            let value = self.parse_expr()?;
-            self.skip_newlines();
-
-            Ok(Stmt::Assign(AssignStmt {
-                target,
-                type_annotation: None,
-                value,
-            }))
+            Err(ParseError::UnexpectedToken(
+                self.current,
+                format!("Expected statement, found {:?}", self.peek()),
+            ))
         }
     }
 
@@ -528,6 +553,14 @@ impl Parser {
     fn check(&self, token_type: &TokenType) -> bool {
         if let Some(token) = self.peek() {
             std::mem::discriminant(&token.token_type) == std::mem::discriminant(token_type)
+        } else {
+            false
+        }
+    }
+
+    fn check_ident(&self) -> bool {
+        if let Some(token) = self.peek() {
+            matches!(token.token_type, TokenType::Ident(_))
         } else {
             false
         }
