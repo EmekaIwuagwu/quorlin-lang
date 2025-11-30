@@ -29,7 +29,7 @@ from std.access import Ownable
 
 contract MyContract(Ownable):
     @external
-    def admin_function():
+    fn admin_function():
         self._only_owner()
         # Only owner can execute
         pass
@@ -46,7 +46,7 @@ contract MyContract(AccessControl):
     MINTER_ROLE: bytes32 = 0x01
 
     @external
-    def mint(to: address, amount: uint256):
+    fn mint(to: address, amount: uint256):
         self._check_role(self.MINTER_ROLE)
         # Only minters can execute
         pass
@@ -63,7 +63,7 @@ from std.token import ERC20
 
 contract MyToken(ERC20):
     @constructor
-    def __init__():
+    fn __init__():
         ERC20.__init__("My Token", "MTK", 18)
         self._mint(msg.sender, 1000000)
 ```

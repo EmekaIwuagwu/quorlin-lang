@@ -53,17 +53,17 @@ contract SimpleStorage:
     stored_value: uint256
 
     @constructor
-    def __init__(initial_value: uint256):
+    fn __init__(initial_value: uint256):
         """Initialize with a starting value."""
         self.stored_value = initial_value
 
     @external
-    def set(new_value: uint256):
+    fn set(new_value: uint256):
         """Update the stored value."""
         self.stored_value = new_value
 
     @view
-    def get() -> uint256:
+    fn get() -> uint256:
         """Retrieve the stored value."""
         return self.stored_value
 ```
@@ -142,24 +142,24 @@ contract MyToken:
     allowances: mapping[address, mapping[address, uint256]]
 
     @constructor
-    def __init__(initial_supply: uint256):
+    fn __init__(initial_supply: uint256):
         """Mint initial supply to deployer."""
         self.total_supply = initial_supply
         self.balances[msg.sender] = initial_supply
         emit Transfer(address(0), msg.sender, initial_supply)
 
     @view
-    def balance_of(owner: address) -> uint256:
+    fn balance_of(owner: address) -> uint256:
         """Get balance of an address."""
         return self.balances[owner]
 
     @view
-    def allowance(owner: address, spender: address) -> uint256:
+    fn allowance(owner: address, spender: address) -> uint256:
         """Get allowance for spender."""
         return self.allowances[owner][spender]
 
     @external
-    def transfer(to: address, amount: uint256) -> bool:
+    fn transfer(to: address, amount: uint256) -> bool:
         """Transfer tokens to another address."""
         require(to != address(0), "Cannot transfer to zero address")
         require(self.balances[msg.sender] >= amount, "Insufficient balance")
@@ -171,7 +171,7 @@ contract MyToken:
         return True
 
     @external
-    def approve(spender: address, amount: uint256) -> bool:
+    fn approve(spender: address, amount: uint256) -> bool:
         """Approve spender to transfer tokens."""
         require(spender != address(0), "Cannot approve zero address")
 
@@ -180,7 +180,7 @@ contract MyToken:
         return True
 
     @external
-    def transfer_from(from_addr: address, to: address, amount: uint256) -> bool:
+    fn transfer_from(from_addr: address, to: address, amount: uint256) -> bool:
         """Transfer tokens using allowance."""
         require(to != address(0), "Cannot transfer to zero address")
         require(self.balances[from_addr] >= amount, "Insufficient balance")
@@ -221,7 +221,7 @@ from std.math import safe_add, safe_sub, safe_mul, safe_div
 
 contract Calculator:
     @external
-    def calculate(a: uint256, b: uint256) -> uint256:
+    fn calculate(a: uint256, b: uint256) -> uint256:
         # All operations are overflow-safe
         result: uint256 = safe_mul(a, b)
         result = safe_add(result, 100)
@@ -237,12 +237,12 @@ contract AdminContract(Ownable):
     """Only owner can call sensitive functions."""
 
     @external
-    def sensitive_operation():
+    fn sensitive_operation():
         self._only_owner()  # Reverts if caller is not owner
         # ... do sensitive stuff
 
     @external
-    def change_owner(new_owner: address):
+    fn change_owner(new_owner: address):
         self.transfer_ownership(new_owner)
 ```
 
@@ -258,17 +258,17 @@ contract MultiAdmin(AccessControl):
     BURNER_ROLE: bytes32 = 0x02
 
     @external
-    def mint(to: address, amount: uint256):
+    fn mint(to: address, amount: uint256):
         self._check_role(self.MINTER_ROLE)
         # Only accounts with MINTER_ROLE can mint
 
     @external
-    def burn(from_addr: address, amount: uint256):
+    fn burn(from_addr: address, amount: uint256):
         self._check_role(self.BURNER_ROLE)
         # Only accounts with BURNER_ROLE can burn
 
     @external
-    def grant_minter(account: address):
+    fn grant_minter(account: address):
         self._check_role(self.DEFAULT_ADMIN_ROLE)
         self.grant_role(self.MINTER_ROLE, account)
 ```

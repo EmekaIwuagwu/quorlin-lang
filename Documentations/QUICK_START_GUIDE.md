@@ -215,13 +215,13 @@ contract Token:
     allowances: mapping[address, mapping[address, uint256]]
 
     @constructor
-    def __init__(initial_supply: uint256):
+    fn __init__(initial_supply: uint256):
         self.total_supply = initial_supply
         self.balances[msg.sender] = initial_supply
         emit Transfer(address(0), msg.sender, initial_supply)
 
     @external
-    def transfer(to: address, amount: uint256) -> bool:
+    fn transfer(to: address, amount: uint256) -> bool:
         require(self.balances[msg.sender] >= amount, "Insufficient balance")
         require(to != address(0), "Cannot send to zero address")
 
@@ -232,7 +232,7 @@ contract Token:
         return True
 
     @view
-    def balance_of(owner: address) -> uint256:
+    fn balance_of(owner: address) -> uint256:
         return self.balances[owner]
 ```
 

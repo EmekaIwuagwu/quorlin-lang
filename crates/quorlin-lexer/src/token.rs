@@ -9,10 +9,10 @@ use serde::{Deserialize, Serialize};
 #[logos(skip r"[ \t]+")] // Skip horizontal whitespace (but NOT newlines)
 pub enum TokenType {
     // ═══════════════════════════════════════════════════════════
-    // PYTHON-COMPATIBLE KEYWORDS
+    // QUORLIN KEYWORDS
     // ═══════════════════════════════════════════════════════════
-    #[token("def")]
-    Def,
+    #[token("fn")]
+    Fn,
 
     #[token("class")]
     Class,

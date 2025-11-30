@@ -53,30 +53,30 @@ contract Governance(AccessControl):
         votes: uint256
 
     @constructor
-    def __init__():
+    fn __init__():
         """Initialize governance contract."""
         AccessControl.__init__()
         self.proposal_count = 0
 
     # View functions
     @view
-    def get_proposal(proposal_id: uint256) -> Proposal:
+    fn get_proposal(proposal_id: uint256) -> Proposal:
         """Get proposal details."""
         require(proposal_id < self.proposal_count, "Governance: invalid proposal")
         return self.proposals[proposal_id]
 
     @view
-    def get_voting_power(account: address) -> uint256:
+    fn get_voting_power(account: address) -> uint256:
         """Get voting power of an account."""
         return self.voting_power[account]
 
     @view
-    def has_voted(proposal_id: uint256, voter: address) -> bool:
+    fn has_voted(proposal_id: uint256, voter: address) -> bool:
         """Check if address has voted on proposal."""
         return self.votes[proposal_id][voter].has_voted
 
     @view
-    def proposal_state(proposal_id: uint256) -> uint8:
+    fn proposal_state(proposal_id: uint256) -> uint8:
         """Get current state of a proposal."""
         require(proposal_id < self.proposal_count, "Governance: invalid proposal")
 
@@ -98,7 +98,7 @@ contract Governance(AccessControl):
 
     # External functions
     @external
-    def propose(description: str) -> uint256:
+    fn propose(description: str) -> uint256:
         """Create a new proposal."""
         self._check_role(self.PROPOSER_ROLE)
 
@@ -123,7 +123,7 @@ contract Governance(AccessControl):
         return proposal_id
 
     @external
-    def cast_vote(proposal_id: uint256, support: bool):
+    fn cast_vote(proposal_id: uint256, support: bool):
         """Cast a vote on a proposal."""
         require(proposal_id < self.proposal_count, "Governance: invalid proposal")
         require(self.proposal_state(proposal_id) == self.ACTIVE, "Governance: voting is closed")
@@ -152,7 +152,7 @@ contract Governance(AccessControl):
         emit VoteCast(msg.sender, proposal_id, support, votes)
 
     @external
-    def execute(proposal_id: uint256):
+    fn execute(proposal_id: uint256):
         """Execute a successful proposal."""
         self._check_role(self.EXECUTOR_ROLE)
         require(proposal_id < self.proposal_count, "Governance: invalid proposal")
@@ -171,7 +171,7 @@ contract Governance(AccessControl):
         emit ProposalExecuted(proposal_id)
 
     @external
-    def delegate_votes(delegatee: address, amount: uint256):
+    fn delegate_votes(delegatee: address, amount: uint256):
         """Delegate voting power to another address."""
         require(self.voting_power[msg.sender] >= amount, "Governance: insufficient voting power")
 
@@ -179,13 +179,13 @@ contract Governance(AccessControl):
         self.voting_power[delegatee] = safe_add(self.voting_power[delegatee], amount)
 
     @external
-    def set_voting_period(new_period: uint256):
+    fn set_voting_period(new_period: uint256):
         """Update voting period (admin only)."""
         self._check_role(self.DEFAULT_ADMIN_ROLE)
         self.voting_period = new_period
 
     @external
-    def set_quorum(new_quorum: uint256):
+    fn set_quorum(new_quorum: uint256):
         """Update quorum requirement (admin only)."""
         self._check_role(self.DEFAULT_ADMIN_ROLE)
         self.quorum_votes = new_quorum
