@@ -1,0 +1,170 @@
+// Minimal Quorlin grammar - v1.0
+// This version avoids shift/reduce conflicts by using simpler patterns
+
+use crate::ast::*;
+use quorlin_lexer::TokenType;
+
+grammar;
+
+extern {
+    type Location = usize;
+    type Error = String;
+
+    enum TokenType {
+        "def" => TokenType::Def,
+        "contract" => TokenType::Contract,
+        "event" => TokenType::Event,
+        "error" => TokenType::Error,
+        "from" => TokenType::From,
+        "import" => TokenType::Import,
+        "return" => TokenType::Return,
+        "pass" => TokenType::Pass,
+        "True" => TokenType::True,
+        "False" => TokenType::False,
+        "None" => TokenType::None,
+        "self" => TokenType::SelfKw,
+
+        ident => TokenType::Ident(<String>),
+        int_literal => TokenType::IntLiteral(<String>),
+        string_literal => TokenType::StringLiteral(<String>),
+        uint => TokenType::Uint(<String>),
+        docstring => TokenType::DocString(<String>),
+
+        ":" => TokenType::Colon,
+        "," => TokenType::Comma,
+        "." => TokenType::Dot,
+        "(" => TokenType::LParen,
+        ")" => TokenType::RParen,
+        "[" => TokenType::LBracket,
+        "]" => TokenType::RBracket,
+        "=" => TokenType::Eq,
+        "->" => TokenType::Arrow,
+        "@" => TokenType::At,
+
+        "address" => TokenType::Address,
+        "str" => TokenType::Str,
+        "mapping" => TokenType::Mapping,
+        "list" => TokenType::List,
+        "bool" => TokenType::Bool,
+
+        "newline" => TokenType::Newline,
+        "indent" => TokenType::Indent,
+        "dedent" => TokenType::Dedent,
+        "eof" => TokenType::Eof,
+    }
+}
+
+pub Module: Module = {
+    "newline"* <items:Item*> "eof" => Module { items }
+};
+
+Item: Item = {
+    "newline"* "event" <name:ident> "(" <params:Comma<EventParam>> ")" "newline"+ => {
+        Item::Event(EventDecl { name, params })
+    },
+    "newline"* "contract" <name:ident> ":" "newline"+ "indent" <body:ContractMember+> "dedent" => {
+        Item::Contract(ContractDecl {
+            name,
+            bases: vec![],
+            body,
+            docstring: None,
+        })
+    },
+};
+
+EventParam: EventParam = {
+    <name:ident> ":" <type_annotation:Type> => {
+        EventParam { name, type_annotation, indexed: false }
+    }
+};
+
+ContractMember: ContractMember = {
+    <name:ident> ":" <type_annotation:Type> <initial_value:("=" <Expr>)?> "newline"+ => {
+        ContractMember::StateVar(StateVar { name, type_annotation, initial_value })
+    },
+    "@" <dec:ident> "newline"* "def" <name:ident> "(" <params:Comma<Param>> ")" <return_type:("->" <Type>)?> ":" "newline"+ "indent" <body:Stmt+> "dedent" => {
+        ContractMember::Function(Function {
+            name,
+            decorators: vec![dec],
+            params,
+            return_type,
+            body,
+            docstring: None,
+        })
+    },
+    "def" <name:ident> "(" <params:Comma<Param>> ")" <return_type:("->" <Type>)?> ":" "newline"+ "indent" <body:Stmt+> "dedent" => {
+        ContractMember::Function(Function {
+            name,
+            decorators: vec![],
+            params,
+            return_type,
+            body,
+            docstring: None,
+        })
+    },
+    "newline"+ => {
+        // Skip empty lines - return dummy member that will be filtered
+        ContractMember::StateVar(StateVar {
+            name: String::new(),
+            type_annotation: Type::Simple("void".to_string()),
+            initial_value: None
+        })
+    },
+};
+
+Param: Param = {
+    <name:ident> ":" <type_annotation:Type> => {
+        Param { name, type_annotation, default: None }
+    }
+};
+
+Type: Type = {
+    "bool" => Type::Simple("bool".to_string()),
+    "address" => Type::Simple("address".to_string()),
+    "str" => Type::Simple("str".to_string()),
+    <uint> => Type::Simple(<>),
+    <ident> => Type::Simple(<>),
+    "mapping" "[" <key:Type> "," <value:Type> "]" => {
+        Type::Mapping(Box::new(key), Box::new(value))
+    },
+    "list" "[" <t:Type> "]" => Type::List(Box::new(t)),
+};
+
+Stmt: Stmt = {
+    "return" <e:Expr> "newline"+ => Stmt::Return(Some(e)),
+    "return" "newline"+ => Stmt::Return(None),
+    "pass" "newline"+ => Stmt::Pass,
+    <target:ident> "=" <value:Expr> "newline"+ => {
+        Stmt::Assign(AssignStmt {
+            target,
+            type_annotation: None,
+            value
+        })
+    },
+};
+
+Expr: Expr = {
+    <int_literal> => Expr::IntLiteral(<>),
+    <string_literal> => Expr::StringLiteral(<>),
+    "True" => Expr::BoolLiteral(true),
+    "False" => Expr::BoolLiteral(false),
+    "None" => Expr::NoneLiteral,
+    <ident> => Expr::Ident(<>),
+    <base:ident> "." <attr:ident> => {
+        Expr::Attribute(Box::new(Expr::Ident(base)), attr)
+    },
+    <func:ident> "(" <args:Comma<Expr>> ")" => {
+        Expr::Call(Box::new(Expr::Ident(func)), args)
+    },
+};
+
+// Comma-separated list
+Comma<T>: Vec<T> = {
+    <mut v:(<T> ",")*> <e:T?> => match e {
+        None => v,
+        Some(e) => {
+            v.push(e);
+            v
+        }
+    }
+};
