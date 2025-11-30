@@ -109,10 +109,10 @@ pub enum Stmt {
     Raise(RaiseStmt),
 }
 
-/// Assignment: `x = 10` or `x: uint256 = 10`
+/// Assignment: `x = 10` or `x: uint256 = 10` or `self.balances[addr] = 100`
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct AssignStmt {
-    pub target: String,
+    pub target: Expr,
     pub type_annotation: Option<Type>,
     pub value: Expr,
 }
