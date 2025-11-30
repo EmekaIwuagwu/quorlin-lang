@@ -1,6 +1,7 @@
 use colored::Colorize;
 use quorlin_lexer::Lexer;
 use quorlin_parser::parse_module;
+use quorlin_semantics::SemanticAnalyzer;
 use std::fs;
 use std::path::PathBuf;
 
@@ -14,6 +15,12 @@ pub fn run(file: PathBuf, json: bool) -> Result<(), Box<dyn std::error::Error>> 
 
     // Parse
     let module = parse_module(tokens).map_err(|e| format!("Parse error: {}", e))?;
+
+    // Semantic analysis
+    let mut analyzer = SemanticAnalyzer::new();
+    analyzer
+        .analyze(&module)
+        .map_err(|e| format!("Semantic error: {}", e))?;
 
     if json {
         // Output as JSON
@@ -112,7 +119,7 @@ pub fn run(file: PathBuf, json: bool) -> Result<(), Box<dyn std::error::Error>> 
         }
 
         println!();
-        println!("{}", "✓ Parse successful!".green().bold());
+        println!("{}", "✓ Parse and semantic analysis successful!".green().bold());
     }
 
     Ok(())
