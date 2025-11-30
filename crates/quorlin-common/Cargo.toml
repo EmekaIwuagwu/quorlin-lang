@@ -1,0 +1,13 @@
+[package]
+name = "quorlin-common"
+version = "0.1.0"
+edition = "2021"
+authors = ["Quorlin Contributors"]
+description = "Common utilities for the Quorlin compiler"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+thiserror = { workspace = true }
+miette = { workspace = true }
+serde = { workspace = true }
+colored = { workspace = true }

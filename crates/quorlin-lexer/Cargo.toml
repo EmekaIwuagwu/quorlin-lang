@@ -1,0 +1,15 @@
+[package]
+name = "quorlin-lexer"
+version = "0.1.0"
+edition = "2021"
+authors = ["Quorlin Contributors"]
+description = "Lexical analysis for the Quorlin smart contract language"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+logos = { workspace = true }
+thiserror = { workspace = true }
+serde = { workspace = true }
+
+[dev-dependencies]
+insta = { workspace = true }

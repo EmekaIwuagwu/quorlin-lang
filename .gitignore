@@ -1,0 +1,31 @@
+# Rust build artifacts
+/target/
+**/*.rs.bk
+*.pdb
+
+# Cargo lock file (for libraries, uncomment if needed)
+# Cargo.lock
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Quorlin build outputs
+*.evm
+*.bin
+*.so
+*.wasm
+*.contract
+
+# Test outputs
+tests/output/
+
+# Documentation build
+docs/book/book/
