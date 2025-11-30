@@ -7,7 +7,9 @@ description = "EVM bytecode generator for Quorlin"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
+quorlin-parser = { path = "../quorlin-parser" }
 quorlin-ir = { path = "../quorlin-ir" }
 quorlin-common = { path = "../quorlin-common" }
 serde = { workspace = true }
 serde_json = { workspace = true }
+thiserror = { workspace = true }

@@ -618,6 +618,7 @@ dependencies = [
  "clap",
  "colored",
  "miette",
+ "quorlin-codegen-evm",
  "quorlin-common",
  "quorlin-lexer",
  "quorlin-parser",
@@ -632,8 +633,10 @@ version = "0.1.0"
 dependencies = [
  "quorlin-common",
  "quorlin-ir",
+ "quorlin-parser",
  "serde",
  "serde_json",
+ "thiserror",
 ]
 
 [[package]]

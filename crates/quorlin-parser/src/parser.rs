@@ -295,20 +295,22 @@ impl Parser {
         } else if self.check(&TokenType::SelfKw) || self.check_ident() {
             // Parse assignment: target = value
             // Target could be: name, self.attr, self.attr[index], self.attr[i][j], etc.
-            // For now, we'll parse it as an expression and extract the identifier
 
-            // Start with identifier or self
-            let target_start = if self.match_token(&TokenType::SelfKw) {
+            // Build the target expression
+            let mut target = if self.match_token(&TokenType::SelfKw) {
                 self.consume(&TokenType::Dot, "Expected '.' after 'self'")?;
-                self.consume_ident("Expected attribute name")?
+                let attr_name = self.consume_ident("Expected attribute name")?;
+                Expr::Attribute(Box::new(Expr::Ident("self".to_string())), attr_name)
             } else {
-                self.consume_ident("Expected identifier")?
+                let ident = self.consume_ident("Expected identifier")?;
+                Expr::Ident(ident)
             };
 
             // Handle any number of index operations: [expr], [expr][expr], etc.
             while self.match_token(&TokenType::LBracket) {
-                self.parse_expr()?; // Parse and discard index expression
+                let index_expr = self.parse_expr()?;
                 self.consume(&TokenType::RBracket, "Expected ']'")?;
+                target = Expr::Index(Box::new(target), Box::new(index_expr));
             }
 
             // Check for assignment operator: =, +=, -=, *=, /=
@@ -335,14 +337,14 @@ impl Parser {
             // For augmented assignments (+=, -=, etc.), convert to: target = target op value
             if let Some(binop) = op {
                 value = Expr::BinOp(
-                    Box::new(Expr::Ident(target_start.clone())),
+                    Box::new(target.clone()),
                     binop,
                     Box::new(value),
                 );
             }
 
             Ok(Stmt::Assign(AssignStmt {
-                target: target_start,
+                target,
                 type_annotation: None,
                 value,
             }))

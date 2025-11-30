@@ -14,6 +14,7 @@ path = "src/main.rs"
 quorlin-lexer = { path = "../quorlin-lexer" }
 quorlin-parser = { path = "../quorlin-parser" }
 quorlin-semantics = { path = "../quorlin-semantics" }
+quorlin-codegen-evm = { path = "../quorlin-codegen-evm" }
 quorlin-common = { path = "../quorlin-common" }
 clap = { workspace = true }
 colored = { workspace = true }
