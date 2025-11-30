@@ -621,6 +621,7 @@ dependencies = [
  "quorlin-common",
  "quorlin-lexer",
  "quorlin-parser",
+ "serde",
  "serde_json",
 ]
 
