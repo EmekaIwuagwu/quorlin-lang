@@ -1,9 +1,4 @@
 fn main() {
-    // Generate parser from simplified LALRPOP grammar
-    // Using grammar_simple for MVP - will enhance iteratively
-    lalrpop::Configuration::new()
-        .emit_rerun_directives(true)
-        .set_in_dir("src")
-        .process_file("src/grammar_simple.lalrpop")
-        .unwrap();
+    // No longer using LALRPOP - we have a hand-written parser
+    // This file can be removed in the future
 }

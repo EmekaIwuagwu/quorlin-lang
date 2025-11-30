@@ -2,31 +2,26 @@
 //!
 //! Parser for the Quorlin smart contract language.
 //!
-//! This crate contains the LALRPOP-based parser that converts
+//! This crate contains a hand-written recursive descent parser that converts
 //! token streams into an Abstract Syntax Tree (AST).
+//!
+//! We use a hand-written parser instead of LALRPOP because Python-style
+//! indentation creates ambiguities that LR parser generators can't handle well.
 
 pub mod ast;
+pub mod parser;
 
-// Include the generated LALRPOP parser
-// Using simplified grammar for MVP
-#[allow(clippy::all)]
-mod grammar_simple {
-    include!(concat!(env!("OUT_DIR"), "/grammar_simple.rs"));
-}
-
-use quorlin_lexer::{Token, TokenType};
+use quorlin_lexer::Token;
 
 // Re-export main types
 pub use ast::*;
+pub use parser::Parser;
 
 /// Parser errors
 #[derive(Debug, thiserror::Error)]
 pub enum ParseError {
     #[error("Parse error at position {0}: {1}")]
-    LalrpopError(usize, String),
-
-    #[error("Unexpected token: {0:?}")]
-    UnexpectedToken(TokenType),
+    UnexpectedToken(usize, String),
 
     #[error("Unexpected end of file")]
     UnexpectedEof,
@@ -34,16 +29,8 @@ pub enum ParseError {
 
 /// Parse a token stream into an AST Module
 pub fn parse_module(tokens: Vec<Token>) -> Result<Module, ParseError> {
-    // Convert our tokens to the format LALRPOP expects
-    let lalrpop_tokens = tokens
-        .into_iter()
-        .map(|t| Ok((t.span.start, t.token_type, t.span.end)))
-        .collect::<Vec<_>>();
-
-    // Call the generated parser (using simplified grammar for MVP)
-    grammar_simple::ModuleParser::new()
-        .parse(lalrpop_tokens.into_iter())
-        .map_err(|e| ParseError::LalrpopError(0, format!("{:?}", e)))
+    let mut parser = Parser::new(tokens);
+    parser.parse_module()
 }
 
 #[cfg(test)]
