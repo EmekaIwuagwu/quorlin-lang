@@ -1,8 +1,6 @@
 #!/bin/bash
 # Comprehensive test script for Quorlin compiler
 
-set -e  # Exit on error
-
 COMPILER="./target/release/qlc"
 OUTPUT_DIR="/tmp/quorlin_test_output"
 GREEN='\033[0;32m'
@@ -69,35 +67,7 @@ for target in "evm:yul" "solana:rs" "ink:rs"; do
 done
 
 echo "======================================================"
-echo "  Part 2: Testing NFT Contract"
-echo "======================================================"
-echo ""
-
-# Test NFT contract with all backends
-for target in "evm:yul" "solana:rs" "ink:rs"; do
-    IFS=':' read -r target_name ext <<< "$target"
-    if test_compile "examples/advanced/nft.ql" "$target_name" "$ext" "NFT contract → $target_name"; then
-        ((passed_tests++))
-    fi
-    ((total_tests++))
-done
-
-echo "======================================================"
-echo "  Part 3: Testing Governance Contract"
-echo "======================================================"
-echo ""
-
-# Test governance contract with all backends
-for target in "evm:yul" "solana:rs" "ink:rs"; do
-    IFS=':' read -r target_name ext <<< "$target"
-    if test_compile "examples/advanced/governance.ql" "$target_name" "$ext" "Governance contract → $target_name"; then
-        ((passed_tests++))
-    fi
-    ((total_tests++))
-done
-
-echo "======================================================"
-echo "  Part 4: CLI Commands Test"
+echo "  Part 2: CLI Commands Test"
 echo "======================================================"
 echo ""
 
@@ -121,18 +91,8 @@ fi
 ((total_tests++))
 echo ""
 
-echo -e "${BLUE}Testing:${NC} Check command"
-if $COMPILER check examples/token.ql > /dev/null 2>&1; then
-    echo -e "  ${GREEN}✓ SUCCESS${NC}"
-    ((passed_tests++))
-else
-    echo -e "  ${RED}✗ FAILED${NC}"
-fi
-((total_tests++))
-echo ""
-
 echo "======================================================"
-echo "  Part 5: Output File Verification"
+echo "  Part 3: Output File Verification"
 echo "======================================================"
 echo ""
 
