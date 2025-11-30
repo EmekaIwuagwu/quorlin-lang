@@ -22,34 +22,43 @@ object "Contract" {
       }
 
       function transfer() {
+        let to := calldataload(4)
+        let amount := calldataload(36)
+
         if iszero(iszero(lt({
           mstore(0, caller())
           mstore(32, 4)
           sload(keccak256(0, 64))
         }, amount)))) { revert(0, 0) }
-        if iszero(iszero(eq(to, address(0))))) { revert(0, 0) }
+        if iszero(iszero(eq(to, 0)))) { revert(0, 0) }
         mstore(0, caller())
         mstore(32, 4)
-        sstore(keccak256(0, 64), safe_sub({
+        sstore(keccak256(0, 64), sub({
           mstore(0, caller())
           mstore(32, 4)
           sload(keccak256(0, 64))
         }, amount))
         mstore(0, to)
         mstore(32, 4)
-        sstore(keccak256(0, 64), safe_add({
+        sstore(keccak256(0, 64), add({
           mstore(0, to)
           mstore(32, 4)
           sload(keccak256(0, 64))
         }, amount))
-        // emit statement (not implemented)
+        mstore(0, caller())
+        mstore(32, to)
+        mstore(64, amount)
+        log1(0, 96, 0x000000000000000000000000000000000000000000000000b40fa3947a0a069d)
         let ret := 1
         mstore(0, ret)
         return(0, 32)
       }
 
       function approve() {
-        if iszero(iszero(eq(spender, address(0))))) { revert(0, 0) }
+        let spender := calldataload(4)
+        let amount := calldataload(36)
+
+        if iszero(iszero(eq(spender, 0)))) { revert(0, 0) }
         // Nested mapping assignment
         mstore(0, caller())
         mstore(32, 5)
@@ -57,13 +66,20 @@ object "Contract" {
         mstore(0, spender)
         mstore(32, first_slot)
         sstore(keccak256(0, 64), amount)
-        // emit statement (not implemented)
+        mstore(0, caller())
+        mstore(32, spender)
+        mstore(64, amount)
+        log1(0, 96, 0x0000000000000000000000000000000000000000000000007d20bd6ffcb8b1a8)
         let ret := 1
         mstore(0, ret)
         return(0, 32)
       }
 
       function transfer_from() {
+        let from_addr := calldataload(4)
+        let to := calldataload(36)
+        let amount := calldataload(68)
+
         if iszero(iszero(lt({
           mstore(0, from_addr)
           mstore(32, 4)
@@ -77,17 +93,17 @@ object "Contract" {
           mstore(32, first_slot)
           sload(keccak256(0, 64))
         }, amount)))) { revert(0, 0) }
-        if iszero(iszero(eq(to, address(0))))) { revert(0, 0) }
+        if iszero(iszero(eq(to, 0)))) { revert(0, 0) }
         mstore(0, from_addr)
         mstore(32, 4)
-        sstore(keccak256(0, 64), safe_sub({
+        sstore(keccak256(0, 64), sub({
           mstore(0, from_addr)
           mstore(32, 4)
           sload(keccak256(0, 64))
         }, amount))
         mstore(0, to)
         mstore(32, 4)
-        sstore(keccak256(0, 64), safe_add({
+        sstore(keccak256(0, 64), add({
           mstore(0, to)
           mstore(32, 4)
           sload(keccak256(0, 64))
@@ -106,13 +122,18 @@ object "Contract" {
           mstore(32, first_slot)
           sload(keccak256(0, 64))
         }, amount))
-        // emit statement (not implemented)
+        mstore(0, from_addr)
+        mstore(32, to)
+        mstore(64, amount)
+        log1(0, 96, 0x000000000000000000000000000000000000000000000000b40fa3947a0a069d)
         let ret := 1
         mstore(0, ret)
         return(0, 32)
       }
 
       function balance_of() {
+        let owner := calldataload(4)
+
         let ret := {
           mstore(0, owner)
           mstore(32, 4)
@@ -123,6 +144,9 @@ object "Contract" {
       }
 
       function allowance() {
+        let owner := calldataload(4)
+        let spender := calldataload(36)
+
         let ret := {
           mstore(0, owner)
           mstore(32, 5)

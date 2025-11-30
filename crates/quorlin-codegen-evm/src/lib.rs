@@ -35,6 +35,9 @@ pub struct EvmCodegen {
 
     /// Current storage slot counter
     next_storage_slot: usize,
+
+    /// Event signatures for event emission
+    event_signatures: HashMap<String, String>,
 }
 
 impl EvmCodegen {
@@ -43,6 +46,7 @@ impl EvmCodegen {
         Self {
             storage_layout: HashMap::new(),
             next_storage_slot: 0,
+            event_signatures: HashMap::new(),
         }
     }
 
@@ -60,6 +64,9 @@ impl EvmCodegen {
                 }
             })
             .ok_or(CodegenError::ContractNotFound)?;
+
+        // Collect event definitions
+        self.collect_events(module)?;
 
         // Allocate storage slots for state variables
         self.allocate_storage(&contract.body)?;
@@ -91,6 +98,27 @@ impl EvmCodegen {
         yul.push_str("}\n");
 
         Ok(yul)
+    }
+
+    /// Collect event definitions and calculate their signatures
+    fn collect_events(&mut self, module: &Module) -> CodegenResult<()> {
+        for item in &module.items {
+            if let quorlin_parser::Item::Event(event) = item {
+                // Calculate event signature (simplified - using hash of name)
+                // In real implementation, should be keccak256(name + param types)
+                use std::collections::hash_map::DefaultHasher;
+                use std::hash::{Hash, Hasher};
+
+                let mut hasher = DefaultHasher::new();
+                event.name.hash(&mut hasher);
+                for param in &event.params {
+                    param.name.hash(&mut hasher);
+                }
+                let sig = format!("0x{:064x}", hasher.finish());
+                self.event_signatures.insert(event.name.clone(), sig);
+            }
+        }
+        Ok(())
     }
 
     /// Allocate storage slots for state variables
@@ -146,6 +174,21 @@ impl EvmCodegen {
                 }
 
                 code.push_str(&format!("      function {}() {{\n", func.name));
+
+                // Load function parameters from calldata
+                // Parameters start at byte 4 (after the 4-byte selector)
+                // Each parameter is 32 bytes
+                for (i, param) in func.params.iter().enumerate() {
+                    let offset = 4 + (i * 32);
+                    code.push_str(&format!(
+                        "        let {} := calldataload({})\n",
+                        param.name, offset
+                    ));
+                }
+
+                if !func.params.is_empty() {
+                    code.push_str("\n");
+                }
 
                 // Function body
                 for stmt in &func.body {
@@ -242,12 +285,81 @@ impl EvmCodegen {
                 let cond = self.generate_expression(&req.condition)?;
                 code.push_str(&format!("{}if iszero({}) {{ revert(0, 0) }}\n", indent_str, cond));
             }
-            Stmt::Emit(_) => {
-                // TODO: Implement event emission
-                code.push_str(&format!("{}// emit statement (not implemented)\n", indent_str));
+            Stmt::Emit(emit) => {
+                // Generate event emission using LOG1
+                // LOG1(offset, size, topic0)
+                // topic0 = event signature
+                // data = abi.encode(args...)
+
+                if let Some(sig) = self.event_signatures.get(&emit.event) {
+                    // Store event arguments in memory starting at position 0
+                    let mut mem_offset = 0;
+                    for arg in &emit.args {
+                        let arg_code = self.generate_expression(arg)?;
+                        code.push_str(&format!("{}mstore({}, {})\n", indent_str, mem_offset, arg_code));
+                        mem_offset += 32;
+                    }
+
+                    // Emit LOG1 with event signature as topic
+                    let data_size = emit.args.len() * 32;
+                    code.push_str(&format!("{}log1(0, {}, {})\n", indent_str, data_size, sig));
+                } else {
+                    code.push_str(&format!("{}// Unknown event: {}\n", indent_str, emit.event));
+                }
             }
             Stmt::Pass => {
                 code.push_str(&format!("{}// pass\n", indent_str));
+            }
+            Stmt::If(if_stmt) => {
+                // Generate if statement
+                let cond_code = self.generate_expression(&if_stmt.condition)?;
+                code.push_str(&format!("{}if {} {{\n", indent_str, cond_code));
+
+                // Then branch
+                for stmt in &if_stmt.then_branch {
+                    code.push_str(&self.generate_statement(stmt, indent + 2)?);
+                }
+
+                // Elif branches
+                for (elif_cond, elif_body) in &if_stmt.elif_branches {
+                    let elif_cond_code = self.generate_expression(elif_cond)?;
+                    code.push_str(&format!("{}}}\n", indent_str));
+                    code.push_str(&format!("{}if {} {{\n", indent_str, elif_cond_code));
+                    for stmt in elif_body {
+                        code.push_str(&self.generate_statement(stmt, indent + 2)?);
+                    }
+                }
+
+                // Else branch
+                if let Some(else_body) = &if_stmt.else_branch {
+                    code.push_str(&format!("{}}}\n", indent_str));
+                    code.push_str(&format!("{}// else\n", indent_str));
+                    code.push_str(&format!("{}{{\n", indent_str));
+                    for stmt in else_body {
+                        code.push_str(&self.generate_statement(stmt, indent + 2)?);
+                    }
+                }
+
+                code.push_str(&format!("{}}}\n", indent_str));
+            }
+            Stmt::While(while_stmt) => {
+                // Generate while loop (using Yul's for loop with no init/post)
+                let cond_code = self.generate_expression(&while_stmt.condition)?;
+                code.push_str(&format!("{}for {{}} {} {{}}\n", indent_str, cond_code));
+                code.push_str(&format!("{}{{\n", indent_str));
+
+                for stmt in &while_stmt.body {
+                    code.push_str(&self.generate_statement(stmt, indent + 2)?);
+                }
+
+                code.push_str(&format!("{}}}\n", indent_str));
+            }
+            Stmt::For(for_stmt) => {
+                // Generate for loop
+                // for i in range(n): ... → for { let i := 0 } lt(i, n) { i := add(i, 1) } { ... }
+                // This is a simplified version - full implementation would handle iterables properly
+                code.push_str(&format!("{}// for {} in ... (simplified)\n", indent_str, for_stmt.variable));
+                code.push_str(&format!("{}// TODO: Proper for loop implementation\n", indent_str));
             }
             _ => {
                 return Err(CodegenError::UnsupportedFeature(format!("{:?}", stmt)));
@@ -298,14 +410,43 @@ impl EvmCodegen {
                 }
             }
             Expr::Call(func, args) => {
-                // For now, just generate function call
+                // Handle special built-in functions
                 if let Expr::Ident(func_name) = &**func {
                     let arg_codes: Vec<_> = args
                         .iter()
                         .map(|a| self.generate_expression(a))
                         .collect::<Result<_, _>>()?;
 
-                    Ok(format!("{}({})", func_name, arg_codes.join(", ")))
+                    match func_name.as_str() {
+                        "address" => {
+                            // address(0) -> 0, address(x) -> x
+                            if args.len() == 1 {
+                                Ok(arg_codes[0].clone())
+                            } else {
+                                Err(CodegenError::UnsupportedFeature("address() requires 1 argument".to_string()))
+                            }
+                        }
+                        "safe_add" => {
+                            // For now, just use add (TODO: add overflow check)
+                            if args.len() == 2 {
+                                Ok(format!("add({}, {})", arg_codes[0], arg_codes[1]))
+                            } else {
+                                Err(CodegenError::UnsupportedFeature("safe_add requires 2 arguments".to_string()))
+                            }
+                        }
+                        "safe_sub" => {
+                            // For now, just use sub (TODO: add underflow check)
+                            if args.len() == 2 {
+                                Ok(format!("sub({}, {})", arg_codes[0], arg_codes[1]))
+                            } else {
+                                Err(CodegenError::UnsupportedFeature("safe_sub requires 2 arguments".to_string()))
+                            }
+                        }
+                        _ => {
+                            // Regular function call
+                            Ok(format!("{}({})", func_name, arg_codes.join(", ")))
+                        }
+                    }
                 } else {
                     Err(CodegenError::UnsupportedFeature("Complex function calls".to_string()))
                 }
