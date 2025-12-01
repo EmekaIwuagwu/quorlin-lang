@@ -87,6 +87,9 @@ impl EvmCodegen {
         yul.push_str("  object \"runtime\" {\n");
         yul.push_str("    code {\n");
 
+        // Add checked arithmetic helper functions
+        yul.push_str(&self.generate_checked_math_helpers());
+
         // Function dispatcher
         yul.push_str(&self.generate_dispatcher(&contract.body)?);
 
@@ -98,6 +101,49 @@ impl EvmCodegen {
         yul.push_str("}\n");
 
         Ok(yul)
+    }
+
+    /// Generate checked arithmetic helper functions
+    fn generate_checked_math_helpers(&self) -> String {
+        r#"
+      // ========================================
+      // CHECKED ARITHMETIC HELPERS
+      // Prevent integer overflow/underflow
+      // ========================================
+
+      function checked_add(a, b) -> result {
+          result := add(a, b)
+          // Overflow check: result must be >= a
+          if lt(result, a) { revert(0, 0) }
+      }
+
+      function checked_sub(a, b) -> result {
+          // Underflow check: a must be >= b
+          if lt(a, b) { revert(0, 0) }
+          result := sub(a, b)
+      }
+
+      function checked_mul(a, b) -> result {
+          result := mul(a, b)
+          // Overflow check (except for zero)
+          if iszero(b) { leave }
+          if iszero(eq(div(result, b), a)) { revert(0, 0) }
+      }
+
+      function checked_div(a, b) -> result {
+          // Division by zero check
+          if iszero(b) { revert(0, 0) }
+          result := div(a, b)
+      }
+
+      function checked_mod(a, b) -> result {
+          // Modulo by zero check
+          if iszero(b) { revert(0, 0) }
+          result := mod(a, b)
+      }
+
+      // ========================================
+"#.to_string()
     }
 
     /// Collect event definitions and calculate their signatures
@@ -355,11 +401,72 @@ impl EvmCodegen {
                 code.push_str(&format!("{}}}\n", indent_str));
             }
             Stmt::For(for_stmt) => {
-                // Generate for loop
-                // for i in range(n): ... → for { let i := 0 } lt(i, n) { i := add(i, 1) } { ... }
-                // This is a simplified version - full implementation would handle iterables properly
-                code.push_str(&format!("{}// for {} in ... (simplified)\n", indent_str, for_stmt.variable));
-                code.push_str(&format!("{}// TODO: Proper for loop implementation\n", indent_str));
+                // Generate for loop: for i in range(n):  →  Yul for loop
+                // ✅ Properly implemented for loop code generation
+
+                // Check if iterable is range() call
+                if let Expr::Call(func, args) = &for_stmt.iterable {
+                    if let Expr::Ident(func_name) = &**func {
+                        if func_name == "range" {
+                            // range(n) → for i := 0 to n-1
+                            // range(start, end) → for i := start to end-1
+                            // range(start, end, step) → for i := start to end-1 by step
+
+                            let (start, end, step) = match args.len() {
+                                1 => {
+                                    // range(n) → 0 to n
+                                    let end = self.generate_expression(&args[0])?;
+                                    ("0".to_string(), end, "1".to_string())
+                                }
+                                2 => {
+                                    // range(start, end)
+                                    let start = self.generate_expression(&args[0])?;
+                                    let end = self.generate_expression(&args[1])?;
+                                    (start, end, "1".to_string())
+                                }
+                                3 => {
+                                    // range(start, end, step)
+                                    let start = self.generate_expression(&args[0])?;
+                                    let end = self.generate_expression(&args[1])?;
+                                    let step = self.generate_expression(&args[2])?;
+                                    (start, end, step)
+                                }
+                                _ => {
+                                    return Err(CodegenError::UnsupportedFeature(
+                                        "range() requires 1-3 arguments".to_string()
+                                    ));
+                                }
+                            };
+
+                            // Generate Yul for loop
+                            code.push_str(&format!(
+                                "{}for {{ let {} := {} }} lt({}, {}) {{ {} := add({}, {}) }}\n",
+                                indent_str, for_stmt.variable, start, for_stmt.variable, end,
+                                for_stmt.variable, for_stmt.variable, step
+                            ));
+                            code.push_str(&format!("{}{{\n", indent_str));
+
+                            // Generate loop body
+                            for stmt in &for_stmt.body {
+                                code.push_str(&self.generate_statement(stmt, indent + 1)?);
+                            }
+
+                            code.push_str(&format!("{}}}\n", indent_str));
+                        } else {
+                            return Err(CodegenError::UnsupportedFeature(
+                                format!("For loop over {} not supported (use range())", func_name)
+                            ));
+                        }
+                    } else {
+                        return Err(CodegenError::UnsupportedFeature(
+                            "For loop iterable must be range() call".to_string()
+                        ));
+                    }
+                } else {
+                    return Err(CodegenError::UnsupportedFeature(
+                        "For loop iterable must be range() call".to_string()
+                    ));
+                }
             }
             _ => {
                 return Err(CodegenError::UnsupportedFeature(format!("{:?}", stmt)));
@@ -389,11 +496,13 @@ impl EvmCodegen {
                 let left_code = self.generate_expression(left)?;
                 let right_code = self.generate_expression(right)?;
 
+                // Use checked arithmetic for overflow-prone operations
                 let op_code = match op {
-                    BinOp::Add => "add",
-                    BinOp::Sub => "sub",
-                    BinOp::Mul => "mul",
-                    BinOp::Div => "div",
+                    BinOp::Add => "checked_add",  // ✅ Overflow protected
+                    BinOp::Sub => "checked_sub",  // ✅ Underflow protected
+                    BinOp::Mul => "checked_mul",  // ✅ Overflow protected
+                    BinOp::Div => "checked_div",  // ✅ Division by zero protected
+                    BinOp::Mod => "checked_mod",  // ✅ Modulo by zero protected
                     BinOp::Eq => "eq",
                     BinOp::NotEq => "iszero(eq",
                     BinOp::Lt => "lt",
@@ -427,19 +536,35 @@ impl EvmCodegen {
                             }
                         }
                         "safe_add" => {
-                            // For now, just use add (TODO: add overflow check)
+                            // ✅ Use checked_add for overflow protection
                             if args.len() == 2 {
-                                Ok(format!("add({}, {})", arg_codes[0], arg_codes[1]))
+                                Ok(format!("checked_add({}, {})", arg_codes[0], arg_codes[1]))
                             } else {
                                 Err(CodegenError::UnsupportedFeature("safe_add requires 2 arguments".to_string()))
                             }
                         }
                         "safe_sub" => {
-                            // For now, just use sub (TODO: add underflow check)
+                            // ✅ Use checked_sub for underflow protection
                             if args.len() == 2 {
-                                Ok(format!("sub({}, {})", arg_codes[0], arg_codes[1]))
+                                Ok(format!("checked_sub({}, {})", arg_codes[0], arg_codes[1]))
                             } else {
                                 Err(CodegenError::UnsupportedFeature("safe_sub requires 2 arguments".to_string()))
+                            }
+                        }
+                        "safe_mul" => {
+                            // ✅ Use checked_mul for overflow protection
+                            if args.len() == 2 {
+                                Ok(format!("checked_mul({}, {})", arg_codes[0], arg_codes[1]))
+                            } else {
+                                Err(CodegenError::UnsupportedFeature("safe_mul requires 2 arguments".to_string()))
+                            }
+                        }
+                        "safe_div" => {
+                            // ✅ Use checked_div for division by zero protection
+                            if args.len() == 2 {
+                                Ok(format!("checked_div({}, {})", arg_codes[0], arg_codes[1]))
+                            } else {
+                                Err(CodegenError::UnsupportedFeature("safe_div requires 2 arguments".to_string()))
                             }
                         }
                         _ => {

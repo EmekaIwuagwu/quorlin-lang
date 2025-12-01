@@ -121,18 +121,18 @@ mod tests {
     #[test]
     fn test_simple_indentation() {
         let raw_tokens = vec![
-            Token::new(TokenType::Def, Span::new(0, 3, 1, 1)),
-            Token::new(TokenType::Ident("foo".to_string()), Span::new(4, 7, 1, 5)),
-            Token::new(TokenType::Colon, Span::new(7, 8, 1, 8)),
-            Token::new(TokenType::Newline, Span::new(8, 9, 1, 9)),
-            Token::new(TokenType::Pass, Span::new(9, 13, 2, 5)), // Indented by 4
-            Token::new(TokenType::Newline, Span::new(13, 14, 2, 9)),
+            Token::new(TokenType::Fn, Span::new(0, 2, 1, 1)),
+            Token::new(TokenType::Ident("foo".to_string()), Span::new(3, 6, 1, 4)),
+            Token::new(TokenType::Colon, Span::new(6, 7, 1, 7)),
+            Token::new(TokenType::Newline, Span::new(7, 8, 1, 8)),
+            Token::new(TokenType::Pass, Span::new(8, 12, 2, 5)), // Indented by 4
+            Token::new(TokenType::Newline, Span::new(12, 13, 2, 9)),
         ];
 
         let mut processor = IndentProcessor::new();
         let result = processor.process(raw_tokens).unwrap();
 
-        // Should have: def, foo, :, newline, INDENT, pass, newline, DEDENT, EOF
+        // Should have: fn, foo, :, newline, INDENT, pass, newline, DEDENT, EOF
         assert_eq!(result.len(), 9);
         assert_eq!(result[4].token_type, TokenType::Indent);
         assert_eq!(result[7].token_type, TokenType::Dedent);
