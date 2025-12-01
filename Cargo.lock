@@ -619,6 +619,8 @@ dependencies = [
  "colored",
  "miette",
  "quorlin-codegen-evm",
+ "quorlin-codegen-ink",
+ "quorlin-codegen-solana",
  "quorlin-common",
  "quorlin-lexer",
  "quorlin-parser",
@@ -645,6 +647,8 @@ version = "0.1.0"
 dependencies = [
  "quorlin-common",
  "quorlin-ir",
+ "quorlin-parser",
+ "thiserror",
 ]
 
 [[package]]
@@ -653,6 +657,8 @@ version = "0.1.0"
 dependencies = [
  "quorlin-common",
  "quorlin-ir",
+ "quorlin-parser",
+ "thiserror",
 ]
 
 [[package]]

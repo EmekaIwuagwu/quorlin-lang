@@ -164,7 +164,7 @@ impl Parser {
             self.skip_newlines();
         }
 
-        if self.check(&TokenType::Def) {
+        if self.check(&TokenType::Fn) {
             self.parse_function(decorators)
         } else {
             // State variable: name: type = value
@@ -189,7 +189,7 @@ impl Parser {
     }
 
     fn parse_function(&mut self, decorators: Vec<String>) -> Result<ContractMember, ParseError> {
-        self.consume(&TokenType::Def, "Expected 'def'")?;
+        self.consume(&TokenType::Fn, "Expected 'fn'")?;
         let name = self.consume_ident("Expected function name")?;
         self.consume(&TokenType::LParen, "Expected '('")?;
 

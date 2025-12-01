@@ -1,0 +1,15 @@
+[package]
+name = "quorlin-tests"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+quorlin-lexer = { path = "../crates/quorlin-lexer" }
+quorlin-parser = { path = "../crates/quorlin-parser" }
+quorlin-semantics = { path = "../crates/quorlin-semantics" }
+quorlin-codegen-evm = { path = "../crates/quorlin-codegen-evm" }
+quorlin-codegen-solana = { path = "../crates/quorlin-codegen-solana" }
+quorlin-codegen-ink = { path = "../crates/quorlin-codegen-ink" }
+
+[dev-dependencies]
+insta = { workspace = true }

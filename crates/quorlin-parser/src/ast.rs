@@ -117,7 +117,7 @@ pub struct AssignStmt {
     pub value: Expr,
 }
 
-/// Augmented assignment: `x += 10`
+/// Augmented assignment: `x += 10` (NOTE: Currently unused - parser desugars to Assign)
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct AugAssignStmt {
     pub target: String,

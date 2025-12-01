@@ -1,5 +1,7 @@
 use colored::Colorize;
 use quorlin_codegen_evm::EvmCodegen;
+use quorlin_codegen_solana::SolanaCodegen;
+use quorlin_codegen_ink::InkCodegen;
 use quorlin_lexer::Lexer;
 use quorlin_parser::parse_module;
 use quorlin_semantics::SemanticAnalyzer;
@@ -48,16 +50,21 @@ pub fn run(
 
     // Code generation
     println!("  {} Code generation...", "4/4".cyan().bold());
-    let code = match target.as_str() {
+    let (code, extension) = match target.as_str() {
         "evm" | "ethereum" => {
             let mut codegen = EvmCodegen::new();
-            codegen.generate(&module).map_err(|e| format!("Codegen error: {}", e))?
+            let code = codegen.generate(&module).map_err(|e| format!("Codegen error: {}", e))?;
+            (code, "yul")
         }
         "solana" => {
-            return Err("Solana backend not implemented yet".into());
+            let mut codegen = SolanaCodegen::new();
+            let code = codegen.generate(&module).map_err(|e| format!("Codegen error: {}", e))?;
+            (code, "rs")
         }
         "polkadot" | "ink" => {
-            return Err("Polkadot backend not implemented yet".into());
+            let mut codegen = InkCodegen::new();
+            let code = codegen.generate(&module).map_err(|e| format!("Codegen error: {}", e))?;
+            (code, "rs")
         }
         _ => {
             return Err(format!("Unknown target: {}", target).into());
@@ -67,7 +74,7 @@ pub fn run(
     // Write output
     let output_file = output.unwrap_or_else(|| {
         let mut path = file.clone();
-        path.set_extension("yul");
+        path.set_extension(extension);
         path
     });
 
