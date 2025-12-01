@@ -93,12 +93,12 @@ mod tests {
 
     #[test]
     fn test_simple_keywords() {
-        let source = "def foo";
+        let source = "fn foo";
         let lexer = Lexer::new(source);
         let tokens = lexer.raw_tokenize().unwrap();
 
         assert_eq!(tokens.len(), 2);
-        assert_eq!(tokens[0].token_type, TokenType::Def);
+        assert_eq!(tokens[0].token_type, TokenType::Fn);
         assert!(matches!(tokens[1].token_type, TokenType::Ident(_)));
     }
 
