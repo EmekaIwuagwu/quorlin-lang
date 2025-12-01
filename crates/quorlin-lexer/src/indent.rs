@@ -50,7 +50,8 @@ impl IndentProcessor {
                         let indent_level = token.span.column - 1;
 
                         // Compare with current indentation
-                        let current_indent = *self.indent_stack.last().unwrap();
+                        // Stack always has at least one element (initialized with 0)
+                        let current_indent = *self.indent_stack.last().expect("indent stack should never be empty");
 
                         if indent_level > current_indent {
                             // INDENT
