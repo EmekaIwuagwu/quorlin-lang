@@ -3,6 +3,8 @@
 //! This is an improved version with complete type checking and validation.
 //! See PRODUCTION_READINESS_REPORT.md for details on improvements.
 
+pub mod backend_consistency;
+pub mod security_analyzer;
 pub mod symbol_table;
 pub mod type_checker;
 pub mod validator;
@@ -87,6 +89,19 @@ impl SemanticAnalyzer {
         // Second pass: type check and validate
         for item in &module.items {
             self.check_item(item)?;
+        }
+
+        // Third pass: security analysis
+        let mut security_analyzer = security_analyzer::SecurityAnalyzer::new();
+        let warnings = security_analyzer.analyze(module);
+
+        // Print security warnings (non-fatal)
+        if !warnings.is_empty() {
+            eprintln!("\n🔒 Security Analysis Warnings:");
+            for warning in &warnings {
+                eprintln!("   {}", warning);
+            }
+            eprintln!();
         }
 
         Ok(())

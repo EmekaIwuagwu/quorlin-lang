@@ -454,8 +454,8 @@ impl SolanaCodegen {
                                 Err(CodegenError::UnsupportedFeature("address() requires 1 argument".to_string()))
                             }
                         }
-                        "safe_add" => Ok(format!("{}.checked_add({}).unwrap()", arg_codes[0], arg_codes[1])),
-                        "safe_sub" => Ok(format!("{}.checked_sub({}).unwrap()", arg_codes[0], arg_codes[1])),
+                        "safe_add" => Ok(format!("{}.checked_add({}).expect(\"arithmetic overflow\")", arg_codes[0], arg_codes[1])),
+                        "safe_sub" => Ok(format!("{}.checked_sub({}).expect(\"arithmetic underflow\")", arg_codes[0], arg_codes[1])),
                         _ => Ok(format!("{}({})", func_name, arg_codes.join(", "))),
                     }
                 } else {
