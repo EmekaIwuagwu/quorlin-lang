@@ -47,8 +47,8 @@ pub struct SemanticAnalyzer {
     /// Symbol table for tracking definitions
     symbols: symbol_table::SymbolTable,
 
-    /// Type environment
-    type_env: HashMap<String, Type>,
+    /// Type environment (reserved for future type inference)
+    _type_env: HashMap<String, Type>,
 }
 
 impl SemanticAnalyzer {
@@ -56,7 +56,7 @@ impl SemanticAnalyzer {
     pub fn new() -> Self {
         Self {
             symbols: symbol_table::SymbolTable::new(),
-            type_env: HashMap::new(),
+            _type_env: HashMap::new(),
         }
     }
 

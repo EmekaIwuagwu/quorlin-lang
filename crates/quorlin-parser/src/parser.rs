@@ -83,6 +83,19 @@ impl Parser {
         let mut params = Vec::new();
         if !self.check(&TokenType::RParen) {
             loop {
+                // Check for 'indexed' keyword before parameter name
+                let indexed = if self.check_ident() {
+                    let ident = self.peek_ident();
+                    if ident.as_deref() == Some("indexed") {
+                        self.consume_ident("Expected 'indexed'")?;
+                        true
+                    } else {
+                        false
+                    }
+                } else {
+                    false
+                };
+
                 let param_name = self.consume_ident("Expected parameter name")?;
                 self.consume(&TokenType::Colon, "Expected ':'")?;
                 let type_annotation = self.parse_type()?;
@@ -90,7 +103,7 @@ impl Parser {
                 params.push(EventParam {
                     name: param_name,
                     type_annotation,
-                    indexed: false, // TODO: Handle indexed keyword
+                    indexed,
                 });
 
                 if !self.match_token(&TokenType::Comma) {
@@ -565,6 +578,18 @@ impl Parser {
             matches!(token.token_type, TokenType::Ident(_))
         } else {
             false
+        }
+    }
+
+    fn peek_ident(&self) -> Option<String> {
+        if let Some(token) = self.peek() {
+            if let TokenType::Ident(name) = &token.token_type {
+                Some(name.clone())
+            } else {
+                None
+            }
+        } else {
+            None
         }
     }
 

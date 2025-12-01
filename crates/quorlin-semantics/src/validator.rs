@@ -51,7 +51,7 @@ pub fn validate_constructor(has_init: bool, state_vars_count: usize) -> Semantic
     Ok(())
 }
 
-#[cfg(tests)]
+#[cfg(test)]
 mod tests {
     use super::*;
 

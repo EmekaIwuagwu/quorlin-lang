@@ -11,6 +11,7 @@ pub mod abi;
 
 use quorlin_parser::Module;
 use std::collections::HashMap;
+use yul_generator::helpers as yul;
 
 /// Errors that can occur during code generation
 #[derive(Debug, thiserror::Error)]
@@ -77,7 +78,9 @@ impl EvmCodegen {
         yul.push_str("object \"Contract\" {\n");
         yul.push_str("  code {\n");
 
-        // Constructor code
+        // Constructor code - execute __init__ if present
+        yul.push_str("    // Constructor (deployment) code\n");
+        yul.push_str(&self.generate_constructor(&contract.body)?);
         yul.push_str("    // Copy runtime code to memory and return it\n");
         yul.push_str("    datacopy(0, dataoffset(\"runtime\"), datasize(\"runtime\"))\n");
         yul.push_str("    return(0, datasize(\"runtime\"))\n");
@@ -130,6 +133,49 @@ impl EvmCodegen {
             }
         }
         Ok(())
+    }
+
+    /// Generate constructor code
+    fn generate_constructor(&self, members: &[quorlin_parser::ContractMember]) -> CodegenResult<String> {
+        // Find constructor function
+        let constructor = members.iter().find_map(|member| {
+            if let quorlin_parser::ContractMember::Function(func) = member {
+                if func.name == "__init__" {
+                    Some(func)
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        });
+
+        let mut code = String::new();
+        if let Some(ctor) = constructor {
+            code.push_str("    // Execute constructor\n");
+
+            // Load constructor parameters from calldata
+            for (i, param) in ctor.params.iter().enumerate() {
+                let offset = i * 32;
+                code.push_str(&format!(
+                    "    let {} := calldataload({})\n",
+                    param.name, offset
+                ));
+            }
+
+            if !ctor.params.is_empty() {
+                code.push_str("\n");
+            }
+
+            // Execute constructor body
+            for stmt in &ctor.body {
+                code.push_str(&self.generate_statement(stmt, 4)?);
+            }
+
+            code.push_str("\n");
+        }
+
+        Ok(code)
     }
 
     /// Generate function dispatcher (routes function calls based on signature)
@@ -233,6 +279,18 @@ impl EvmCodegen {
                             // Local variable
                             code.push_str(&format!("{}let {} := {}\n", indent_str, name, value_code));
                         }
+                    }
+                    Expr::Attribute(base, attr) => {
+                        // Handle self.state_variable = value
+                        if let Expr::Ident(base_name) = &**base {
+                            if base_name == "self" {
+                                if let Some(&slot) = self.storage_layout.get(attr) {
+                                    code.push_str(&format!("{}sstore({}, {})\n", indent_str, slot, value_code));
+                                    return Ok(code);
+                                }
+                            }
+                        }
+                        return Err(CodegenError::UnsupportedFeature(format!("Assignment target {:?}", assign.target)));
                     }
                     Expr::Index(target, index) => {
                         // Indexed assignment: self.balances[addr] = value
@@ -357,9 +415,34 @@ impl EvmCodegen {
             Stmt::For(for_stmt) => {
                 // Generate for loop
                 // for i in range(n): ... → for { let i := 0 } lt(i, n) { i := add(i, 1) } { ... }
-                // This is a simplified version - full implementation would handle iterables properly
-                code.push_str(&format!("{}// for {} in ... (simplified)\n", indent_str, for_stmt.variable));
-                code.push_str(&format!("{}// TODO: Proper for loop implementation\n", indent_str));
+
+                // Check if iterable is a range() call
+                if let quorlin_parser::Expr::Call(func, args) = &for_stmt.iterable {
+                    if let quorlin_parser::Expr::Ident(func_name) = &**func {
+                        if func_name == "range" && !args.is_empty() {
+                            let end_expr = self.generate_expression(&args[0])?;
+
+                            // Generate: for { let i := 0 } lt(i, end) { i := add(i, 1) } { body }
+                            code.push_str(&format!(
+                                "{}for {{ let {} := 0 }} lt({}, {}) {{ {} := add({}, 1) }}\n",
+                                indent_str, for_stmt.variable, for_stmt.variable, end_expr,
+                                for_stmt.variable, for_stmt.variable
+                            ));
+                            code.push_str(&format!("{}{{\n", indent_str));
+
+                            for stmt in &for_stmt.body {
+                                code.push_str(&self.generate_statement(stmt, indent + 2)?);
+                            }
+
+                            code.push_str(&format!("{}}}\n", indent_str));
+                            return Ok(code);
+                        }
+                    }
+                }
+
+                // Fallback for unsupported iterables
+                code.push_str(&format!("{}// for {} in ... (unsupported iterable)\n", indent_str, for_stmt.variable));
+                code.push_str(&format!("{}// Only range() is currently supported\n", indent_str));
             }
             _ => {
                 return Err(CodegenError::UnsupportedFeature(format!("{:?}", stmt)));
@@ -427,19 +510,35 @@ impl EvmCodegen {
                             }
                         }
                         "safe_add" => {
-                            // For now, just use add (TODO: add overflow check)
+                            // Safe add with overflow check
                             if args.len() == 2 {
-                                Ok(format!("add({}, {})", arg_codes[0], arg_codes[1]))
+                                Ok(yul::safe_add(&arg_codes[0], &arg_codes[1], true))
                             } else {
                                 Err(CodegenError::UnsupportedFeature("safe_add requires 2 arguments".to_string()))
                             }
                         }
                         "safe_sub" => {
-                            // For now, just use sub (TODO: add underflow check)
+                            // Safe sub with underflow check
                             if args.len() == 2 {
-                                Ok(format!("sub({}, {})", arg_codes[0], arg_codes[1]))
+                                Ok(yul::safe_sub(&arg_codes[0], &arg_codes[1], true))
                             } else {
                                 Err(CodegenError::UnsupportedFeature("safe_sub requires 2 arguments".to_string()))
+                            }
+                        }
+                        "safe_mul" => {
+                            // Safe mul with overflow check
+                            if args.len() == 2 {
+                                Ok(yul::safe_mul(&arg_codes[0], &arg_codes[1], true))
+                            } else {
+                                Err(CodegenError::UnsupportedFeature("safe_mul requires 2 arguments".to_string()))
+                            }
+                        }
+                        "safe_div" => {
+                            // Safe div with division by zero check
+                            if args.len() == 2 {
+                                Ok(yul::safe_div(&arg_codes[0], &arg_codes[1]))
+                            } else {
+                                Err(CodegenError::UnsupportedFeature("safe_div requires 2 arguments".to_string()))
                             }
                         }
                         _ => {
