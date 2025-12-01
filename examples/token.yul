@@ -1,6 +1,19 @@
 // Contract: Token
 object "Contract" {
   code {
+    // Constructor (deployment) code
+    // Execute constructor
+    let initial_supply := calldataload(0)
+
+    sstore(3, initial_supply)
+    mstore(0, caller())
+    mstore(32, 4)
+    sstore(keccak256(0, 64), initial_supply)
+    mstore(0, 0)
+    mstore(32, caller())
+    mstore(64, initial_supply)
+    log1(0, 96, 0x000000000000000000000000000000000000000000000000b40fa3947a0a069d)
+
     // Copy runtime code to memory and return it
     datacopy(0, dataoffset("runtime"), datasize("runtime"))
     return(0, datasize("runtime"))
@@ -33,18 +46,33 @@ object "Contract" {
         if iszero(iszero(eq(to, 0)))) { revert(0, 0) }
         mstore(0, caller())
         mstore(32, 4)
-        sstore(keccak256(0, 64), sub({
+        sstore(keccak256(0, 64), {
+          if lt({
           mstore(0, caller())
           mstore(32, 4)
           sload(keccak256(0, 64))
-        }, amount))
+        }, amount) { revert(0, 0) }
+          sub({
+          mstore(0, caller())
+          mstore(32, 4)
+          sload(keccak256(0, 64))
+        }, amount)
+        })
         mstore(0, to)
         mstore(32, 4)
-        sstore(keccak256(0, 64), add({
+        sstore(keccak256(0, 64), {
+          let result := add({
           mstore(0, to)
           mstore(32, 4)
           sload(keccak256(0, 64))
-        }, amount))
+        }, amount)
+          if lt(result, {
+          mstore(0, to)
+          mstore(32, 4)
+          sload(keccak256(0, 64))
+        }) { revert(0, 0) }
+          result
+        })
         mstore(0, caller())
         mstore(32, to)
         mstore(64, amount)
@@ -96,18 +124,33 @@ object "Contract" {
         if iszero(iszero(eq(to, 0)))) { revert(0, 0) }
         mstore(0, from_addr)
         mstore(32, 4)
-        sstore(keccak256(0, 64), sub({
+        sstore(keccak256(0, 64), {
+          if lt({
           mstore(0, from_addr)
           mstore(32, 4)
           sload(keccak256(0, 64))
-        }, amount))
+        }, amount) { revert(0, 0) }
+          sub({
+          mstore(0, from_addr)
+          mstore(32, 4)
+          sload(keccak256(0, 64))
+        }, amount)
+        })
         mstore(0, to)
         mstore(32, 4)
-        sstore(keccak256(0, 64), add({
+        sstore(keccak256(0, 64), {
+          let result := add({
           mstore(0, to)
           mstore(32, 4)
           sload(keccak256(0, 64))
-        }, amount))
+        }, amount)
+          if lt(result, {
+          mstore(0, to)
+          mstore(32, 4)
+          sload(keccak256(0, 64))
+        }) { revert(0, 0) }
+          result
+        })
         // Nested mapping assignment
         mstore(0, from_addr)
         mstore(32, 5)

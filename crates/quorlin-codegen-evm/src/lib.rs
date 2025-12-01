@@ -77,7 +77,9 @@ impl EvmCodegen {
         yul.push_str("object \"Contract\" {\n");
         yul.push_str("  code {\n");
 
-        // Constructor code
+        // Constructor code - execute __init__ if present
+        yul.push_str("    // Constructor (deployment) code\n");
+        yul.push_str(&self.generate_constructor(&contract.body)?);
         yul.push_str("    // Copy runtime code to memory and return it\n");
         yul.push_str("    datacopy(0, dataoffset(\"runtime\"), datasize(\"runtime\"))\n");
         yul.push_str("    return(0, datasize(\"runtime\"))\n");
@@ -176,6 +178,49 @@ impl EvmCodegen {
             }
         }
         Ok(())
+    }
+
+    /// Generate constructor code
+    fn generate_constructor(&self, members: &[quorlin_parser::ContractMember]) -> CodegenResult<String> {
+        // Find constructor function
+        let constructor = members.iter().find_map(|member| {
+            if let quorlin_parser::ContractMember::Function(func) = member {
+                if func.name == "__init__" {
+                    Some(func)
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        });
+
+        let mut code = String::new();
+        if let Some(ctor) = constructor {
+            code.push_str("    // Execute constructor\n");
+
+            // Load constructor parameters from calldata
+            for (i, param) in ctor.params.iter().enumerate() {
+                let offset = i * 32;
+                code.push_str(&format!(
+                    "    let {} := calldataload({})\n",
+                    param.name, offset
+                ));
+            }
+
+            if !ctor.params.is_empty() {
+                code.push_str("\n");
+            }
+
+            // Execute constructor body
+            for stmt in &ctor.body {
+                code.push_str(&self.generate_statement(stmt, 4)?);
+            }
+
+            code.push_str("\n");
+        }
+
+        Ok(code)
     }
 
     /// Generate function dispatcher (routes function calls based on signature)
@@ -321,6 +366,18 @@ impl EvmCodegen {
                         }
 
                         return Err(CodegenError::UnsupportedFeature(format!("Indexed assignment {:?}", assign.target)));
+                    }
+                    Expr::Attribute(base, attr) => {
+                        // Assignment to attribute: self.state_var = value
+                        if let Expr::Ident(base_name) = &**base {
+                            if base_name == "self" {
+                                if let Some(&slot) = self.storage_layout.get(attr) {
+                                    code.push_str(&format!("{}sstore({}, {})\n", indent_str, slot, value_code));
+                                    return Ok(code);
+                                }
+                            }
+                        }
+                        return Err(CodegenError::UnsupportedFeature(format!("Assignment target {:?}", assign.target)));
                     }
                     _ => {
                         return Err(CodegenError::UnsupportedFeature(format!("Assignment target {:?}", assign.target)));

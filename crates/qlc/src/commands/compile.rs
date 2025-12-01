@@ -7,6 +7,7 @@ use quorlin_parser::parse_module;
 use quorlin_semantics::SemanticAnalyzer;
 use std::fs;
 use std::path::PathBuf;
+use std::time::Instant;
 
 pub fn run(
     file: PathBuf,
@@ -15,6 +16,8 @@ pub fn run(
     _emit_ir: bool,
     _optimize: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    let start_time = Instant::now();
+
     println!(
         "{} {} for {}",
         "Compiling".green().bold(),
@@ -78,9 +81,25 @@ pub fn run(
     fs::write(&output_file, &code)?;
     println!("      ✓ Generated {} ({} bytes)", output_file.display(), code.len());
 
+    let elapsed = start_time.elapsed();
+    let elapsed_str = if elapsed.as_secs() > 0 {
+        format!("{:.2}s", elapsed.as_secs_f64())
+    } else {
+        format!("{}ms", elapsed.as_millis())
+    };
+
     println!();
-    println!("{} Compilation successful!", "✓".green().bold());
-    println!("  Output: {}", output_file.display().to_string().bold());
+    println!("{}", "━".repeat(60).bright_green());
+    println!(
+        "{} {}",
+        "✓".green().bold(),
+        "Successful compilation".green().bold()
+    );
+    println!("{}", "━".repeat(60).bright_green());
+    println!("  {} {}", "Output:".bold(), output_file.display().to_string().cyan());
+    println!("  {} {}", "Size:".bold(), format!("{} bytes", code.len()).cyan());
+    println!("  {} {}", "Time:".bold(), elapsed_str.yellow());
+    println!("{}", "━".repeat(60).bright_green());
 
     Ok(())
 }

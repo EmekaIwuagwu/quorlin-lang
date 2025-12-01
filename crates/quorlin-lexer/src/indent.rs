@@ -7,8 +7,8 @@ use crate::token::{Span, Token, TokenType};
 pub struct IndentProcessor {
     /// Stack of indentation levels (in spaces)
     indent_stack: Vec<usize>,
-    /// Pending tokens to emit
-    pending: Vec<Token>,
+    /// Pending tokens to emit (reserved for future use)
+    _pending: Vec<Token>,
     /// Whether we're at the start of a line
     at_line_start: bool,
     /// Current line number
@@ -21,7 +21,7 @@ impl IndentProcessor {
     pub fn new() -> Self {
         Self {
             indent_stack: vec![0], // Start with base indentation of 0
-            pending: Vec::new(),
+            _pending: Vec::new(),
             at_line_start: true,
             line: 1,
             column: 1,

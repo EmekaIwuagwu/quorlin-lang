@@ -1,6 +1,5 @@
 use clap::{Parser, Subcommand};
 use colored::Colorize;
-use std::fs;
 use std::path::PathBuf;
 
 mod commands;
