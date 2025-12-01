@@ -367,6 +367,18 @@ impl EvmCodegen {
 
                         return Err(CodegenError::UnsupportedFeature(format!("Indexed assignment {:?}", assign.target)));
                     }
+                    Expr::Attribute(base, attr) => {
+                        // Assignment to attribute: self.state_var = value
+                        if let Expr::Ident(base_name) = &**base {
+                            if base_name == "self" {
+                                if let Some(&slot) = self.storage_layout.get(attr) {
+                                    code.push_str(&format!("{}sstore({}, {})\n", indent_str, slot, value_code));
+                                    return Ok(code);
+                                }
+                            }
+                        }
+                        return Err(CodegenError::UnsupportedFeature(format!("Assignment target {:?}", assign.target)));
+                    }
                     _ => {
                         return Err(CodegenError::UnsupportedFeature(format!("Assignment target {:?}", assign.target)));
                     }
