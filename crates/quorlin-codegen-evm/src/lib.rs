@@ -540,6 +540,21 @@ impl EvmCodegen {
         match expr {
             Expr::IntLiteral(n) => Ok(n.clone()),
             Expr::BoolLiteral(b) => Ok(if *b { "1".to_string() } else { "0".to_string() }),
+            Expr::StringLiteral(s) => {
+                // For MVP: Convert strings to bytes32 by padding with zeros
+                // In production, would need proper string encoding with length prefix
+                // For now, convert to hex bytes (limited to 32 bytes)
+                let bytes: Vec<u8> = s.bytes().take(32).collect();
+                let mut hex_value = String::from("0x");
+                for byte in bytes {
+                    hex_value.push_str(&format!("{:02x}", byte));
+                }
+                // Pad to 32 bytes if needed
+                while hex_value.len() < 66 { // "0x" + 64 hex chars = 66
+                    hex_value.push_str("00");
+                }
+                Ok(hex_value)
+            }
             Expr::Ident(name) => {
                 // Check if it's a state variable
                 if let Some(&slot) = self.storage_layout.get(name) {

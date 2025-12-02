@@ -65,6 +65,9 @@ pub enum TokenType {
     #[token("None")]
     None,
 
+    #[token("let")]
+    Let,
+
     #[token("self")]
     SelfKw,
 
