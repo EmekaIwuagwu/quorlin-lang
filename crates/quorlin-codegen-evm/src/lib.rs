@@ -655,10 +655,14 @@ impl EvmCodegen {
                         return Ok("caller()".to_string());
                     } else if base_name == "msg" && attr == "value" {
                         return Ok("callvalue()".to_string());
+                    } else if base_name == "block" && attr == "timestamp" {
+                        return Ok("timestamp()".to_string());
+                    } else if base_name == "block" && attr == "number" {
+                        return Ok("number()".to_string());
                     } else if base_name == "self" {
-                        // self.state_variable - look up storage slot
+                        // self.state_variable - look up storage slot and load it
                         if let Some(&slot) = self.storage_layout.get(attr) {
-                            return Ok(slot.to_string());
+                            return Ok(format!("sload({})", slot));
                         }
                     }
                 }
@@ -719,6 +723,16 @@ impl EvmCodegen {
                 }
 
                 Err(CodegenError::UnsupportedFeature(format!("Index {:?}", expr)))
+            }
+            Expr::UnaryOp(op, expr) => {
+                use quorlin_parser::UnaryOp;
+                let expr_code = self.generate_expression(&**expr)?;
+
+                match op {
+                    UnaryOp::Neg => Ok(format!("sub(0, {})", expr_code)),
+                    UnaryOp::Pos => Ok(expr_code), // Unary + is a no-op
+                    UnaryOp::Not => Ok(format!("iszero({})", expr_code)),
+                }
             }
             _ => Err(CodegenError::UnsupportedFeature(format!("Expression {:?}", expr))),
         }

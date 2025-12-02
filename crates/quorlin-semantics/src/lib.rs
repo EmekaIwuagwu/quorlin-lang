@@ -255,9 +255,20 @@ impl SemanticAnalyzer {
                     type_checker::check_type_compatibility(&target_type, &value_type)?;
                 }
 
-                // Mark target as initialized
+                // Mark target as initialized and define in symbol table for local variables
                 if let quorlin_parser::Expr::Ident(name) = &assign.target {
                     self.initialized_vars.insert(name.clone());
+                    // If this has a type annotation, define it in the symbol table
+                    if let Some(target_type) = &assign.type_annotation {
+                        // This is a local variable declaration (let x: type = value)
+                        let _ = self.symbols.define_variable(name, target_type);
+                    } else if target_type != Type::Simple("unknown".to_string()) {
+                        // No annotation but we inferred a type, define it
+                        let _ = self.symbols.define_variable(name, &target_type);
+                    } else {
+                        // Try to use the value type
+                        let _ = self.symbols.define_variable(name, &value_type);
+                    }
                 } else if let quorlin_parser::Expr::Attribute(_, name) = &assign.target {
                     self.initialized_vars.insert(name.clone());
                 }
