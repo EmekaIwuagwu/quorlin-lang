@@ -595,13 +595,14 @@ impl EvmCodegen {
                 }
             }
             Expr::Call(func, args) => {
+                // Generate argument code
+                let arg_codes: Vec<_> = args
+                    .iter()
+                    .map(|a| self.generate_expression(a))
+                    .collect::<Result<_, _>>()?;
+
                 // Handle special built-in functions
                 if let Expr::Ident(func_name) = &**func {
-                    let arg_codes: Vec<_> = args
-                        .iter()
-                        .map(|a| self.generate_expression(a))
-                        .collect::<Result<_, _>>()?;
-
                     match func_name.as_str() {
                         "address" => {
                             // address(0) -> 0, address(x) -> x
@@ -647,6 +648,18 @@ impl EvmCodegen {
                             // Regular function call
                             Ok(format!("{}({})", func_name, arg_codes.join(", ")))
                         }
+                    }
+                } else if let Expr::Attribute(base, method_name) = &**func {
+                    // Handle method calls like self.method_name()
+                    if let Expr::Ident(base_name) = &**base {
+                        if base_name == "self" {
+                            // Internal function call
+                            Ok(format!("{}({})", method_name, arg_codes.join(", ")))
+                        } else {
+                            Err(CodegenError::UnsupportedFeature(format!("Method calls on {}", base_name)))
+                        }
+                    } else {
+                        Err(CodegenError::UnsupportedFeature("Complex method calls".to_string()))
                     }
                 } else {
                     Err(CodegenError::UnsupportedFeature("Complex function calls".to_string()))

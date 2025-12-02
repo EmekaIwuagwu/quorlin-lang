@@ -524,13 +524,47 @@ impl Parser {
     }
 
     fn parse_expr(&mut self) -> Result<Expr, ParseError> {
-        self.parse_comparison()
+        self.parse_or()
     }
 
-    fn parse_comparison(&mut self) -> Result<Expr, ParseError> {
-        let mut expr = self.parse_postfix()?;
+    // Logical OR (lowest precedence)
+    fn parse_or(&mut self) -> Result<Expr, ParseError> {
+        let mut expr = self.parse_and()?;
 
-        // Handle binary operators: ==, !=, <, >, <=, >=, +, -, *, /, %, //, **, and, or
+        while let Some(token) = self.peek() {
+            if let TokenType::Or = token.token_type {
+                self.advance();
+                let right = self.parse_and()?;
+                expr = Expr::BinOp(Box::new(expr), BinOp::Or, Box::new(right));
+            } else {
+                break;
+            }
+        }
+
+        Ok(expr)
+    }
+
+    // Logical AND
+    fn parse_and(&mut self) -> Result<Expr, ParseError> {
+        let mut expr = self.parse_comparison()?;
+
+        while let Some(token) = self.peek() {
+            if let TokenType::And = token.token_type {
+                self.advance();
+                let right = self.parse_comparison()?;
+                expr = Expr::BinOp(Box::new(expr), BinOp::And, Box::new(right));
+            } else {
+                break;
+            }
+        }
+
+        Ok(expr)
+    }
+
+    // Comparison operators: ==, !=, <, >, <=, >=
+    fn parse_comparison(&mut self) -> Result<Expr, ParseError> {
+        let mut expr = self.parse_additive()?;
+
         while let Some(token) = self.peek() {
             let op = match &token.token_type {
                 TokenType::EqEq => BinOp::Eq,
@@ -539,21 +573,66 @@ impl Parser {
                 TokenType::Gt => BinOp::Gt,
                 TokenType::LtEq => BinOp::LtEq,
                 TokenType::GtEq => BinOp::GtEq,
-                TokenType::Plus => BinOp::Add,
-                TokenType::Minus => BinOp::Sub,
-                TokenType::Star => BinOp::Mul,
-                TokenType::Slash => BinOp::Div,
-                TokenType::Percent => BinOp::Mod,
-                // FloorDiv removed - // now used for comments
-                TokenType::DoubleStar => BinOp::Pow,
-                TokenType::And => BinOp::And,
-                TokenType::Or => BinOp::Or,
                 _ => break,
             };
 
             self.advance();
-            let right = self.parse_postfix()?;
+            let right = self.parse_additive()?;
             expr = Expr::BinOp(Box::new(expr), op, Box::new(right));
+        }
+
+        Ok(expr)
+    }
+
+    // Addition and subtraction
+    fn parse_additive(&mut self) -> Result<Expr, ParseError> {
+        let mut expr = self.parse_multiplicative()?;
+
+        while let Some(token) = self.peek() {
+            let op = match &token.token_type {
+                TokenType::Plus => BinOp::Add,
+                TokenType::Minus => BinOp::Sub,
+                _ => break,
+            };
+
+            self.advance();
+            let right = self.parse_multiplicative()?;
+            expr = Expr::BinOp(Box::new(expr), op, Box::new(right));
+        }
+
+        Ok(expr)
+    }
+
+    // Multiplication, division, and modulo
+    fn parse_multiplicative(&mut self) -> Result<Expr, ParseError> {
+        let mut expr = self.parse_power()?;
+
+        while let Some(token) = self.peek() {
+            let op = match &token.token_type {
+                TokenType::Star => BinOp::Mul,
+                TokenType::Slash => BinOp::Div,
+                TokenType::Percent => BinOp::Mod,
+                _ => break,
+            };
+
+            self.advance();
+            let right = self.parse_power()?;
+            expr = Expr::BinOp(Box::new(expr), op, Box::new(right));
+        }
+
+        Ok(expr)
+    }
+
+    // Power operator (right-associative)
+    fn parse_power(&mut self) -> Result<Expr, ParseError> {
+        let mut expr = self.parse_postfix()?;
+
+        if let Some(token) = self.peek() {
+            if let TokenType::DoubleStar = token.token_type {
+                self.advance();
+                let right = self.parse_power()?; // Right-associative
+                expr = Expr::BinOp(Box::new(expr), BinOp::Pow, Box::new(right));
+            }
         }
 
         Ok(expr)

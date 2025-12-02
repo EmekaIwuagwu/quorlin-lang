@@ -109,7 +109,7 @@ object "Contract" {
         let b := calldataload(36)
         let c := calldataload(68)
 
-        let result1 := checked_mul(checked_add(a, b), c)
+        let result1 := checked_add(a, checked_mul(b, c))
         let result2 := checked_mul(checked_add(a, b), c)
         let result3 := checked_div(checked_mul(checked_add(a, b), c), checked_add(checked_sub(b, a), 1))
         let ret := result3
