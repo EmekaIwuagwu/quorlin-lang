@@ -198,7 +198,7 @@ object "Contract" {
         let new_owner := calldataload(4)
 
         if iszero(eq(caller(), sload(1))) { revert(0, 0) }
-        if iszero(iszero(eq(new_owner, 0)))) { revert(0, 0) }
+        if iszero(iszero(eq(new_owner, 0))) { revert(0, 0) }
         sstore(1, new_owner)
       }
 
@@ -206,8 +206,8 @@ object "Contract" {
         let numerator := calldataload(4)
         let denominator := calldataload(36)
 
-        if iszero(iszero(eq(denominator, 0)))) { revert(0, 0) }
-        if iszero(iszero(lt(numerator, denominator)))) { revert(0, 0) }
+        if iszero(iszero(eq(denominator, 0))) { revert(0, 0) }
+        if iszero(iszero(lt(numerator, denominator))) { revert(0, 0) }
         let result := checked_div(numerator, denominator)
         let ret := result
         mstore(0, ret)

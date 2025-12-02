@@ -334,7 +334,7 @@ object "Contract" {
         let n := calldataload(4)
 
         if iszero(gt(n, 0)) { revert(0, 0) }
-        if iszero(iszero(gt(n, 20)))) { revert(0, 0) }
+        if iszero(iszero(gt(n, 20))) { revert(0, 0) }
         sstore(0, 1)
         for { let i := 1 } lt(i, checked_add(n, 1)) { i := add(i, 1) }
         {
@@ -349,7 +349,7 @@ object "Contract" {
       function is_prime() {
         let n := calldataload(4)
 
-        if iszero(gt(n, 1))) {
+        if iszero(gt(n, 1)) {
           let ret := 0
           mstore(0, ret)
           return(0, 32)
@@ -365,7 +365,7 @@ object "Contract" {
           return(0, 32)
         }
         let i := 3
-        for {} iszero(gt(checked_mul(i, i), n))) {}
+        for {} iszero(gt(checked_mul(i, i), n)) {}
         {
           if eq(checked_mod(n, i), 0) {
             let ret := 0

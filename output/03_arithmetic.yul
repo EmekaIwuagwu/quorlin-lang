@@ -114,11 +114,11 @@ object "Contract" {
         let b := calldataload(36)
 
         let is_equal := eq(a, b)
-        let is_not_equal := iszero(eq(a, b)))
+        let is_not_equal := iszero(eq(a, b))
         let is_greater := gt(a, b)
         let is_less := lt(a, b)
-        let is_greater_equal := iszero(lt(a, b)))
-        let is_less_equal := iszero(gt(a, b)))
+        let is_greater_equal := iszero(lt(a, b))
+        let is_less_equal := iszero(gt(a, b))
         let ret := is_greater
         mstore(0, ret)
         return(0, 32)
