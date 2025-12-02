@@ -50,6 +50,26 @@ object "Contract" {
       }
 
       // ========================================
+      // STORAGE ACCESS HELPERS
+      // Clean mapping/array access without block expressions
+      // ========================================
+
+      function get_mapping(key, slot) -> result {
+          mstore(0, key)
+          mstore(32, slot)
+          result := sload(keccak256(0, 64))
+      }
+
+      function get_nested_mapping(key1, key2, slot) -> result {
+          mstore(0, key1)
+          mstore(32, slot)
+          let first_slot := keccak256(0, 64)
+          mstore(0, key2)
+          mstore(32, first_slot)
+          result := sload(keccak256(0, 64))
+      }
+
+      // ========================================
       // Function dispatcher
       switch selector()
       case 0xea38e31a { set_balance() }
@@ -89,20 +109,12 @@ object "Contract" {
         let account := calldataload(4)
         let amount := calldataload(36)
 
-        let current := {
-          mstore(0, account)
-          mstore(32, 0)
-          sload(keccak256(0, 64))
-        }
+        let current := get_mapping(account, 0)
         mstore(0, account)
         mstore(32, 0)
         sstore(keccak256(0, 64), checked_add(current, amount))
         mstore(0, account)
-        mstore(32, {
-          mstore(0, account)
-          mstore(32, 0)
-          sload(keccak256(0, 64))
-        })
+        mstore(32, get_mapping(account, 0))
         log1(0, 64, 0x000000000000000000000000000000000000000000000000bbe37ba9e0ef6239)
       }
 
@@ -112,25 +124,13 @@ object "Contract" {
         let amount := calldataload(68)
 
         if iszero(eq(caller(), sload(4))) { revert(0, 0) }
-        if iszero(iszero(lt({
-          mstore(0, from_addr)
-          mstore(32, 0)
-          sload(keccak256(0, 64))
-        }, amount)))) { revert(0, 0) }
+        if iszero(iszero(lt(get_mapping(from_addr, 0), amount)))) { revert(0, 0) }
         mstore(0, from_addr)
         mstore(32, 0)
-        sstore(keccak256(0, 64), checked_sub({
-          mstore(0, from_addr)
-          mstore(32, 0)
-          sload(keccak256(0, 64))
-        }, amount))
+        sstore(keccak256(0, 64), checked_sub(get_mapping(from_addr, 0), amount))
         mstore(0, to_addr)
         mstore(32, 0)
-        sstore(keccak256(0, 64), checked_add({
-          mstore(0, to_addr)
-          mstore(32, 0)
-          sload(keccak256(0, 64))
-        }, amount))
+        sstore(keccak256(0, 64), checked_add(get_mapping(to_addr, 0), amount))
         mstore(0, from_addr)
         mstore(32, to_addr)
         mstore(64, amount)
@@ -140,11 +140,7 @@ object "Contract" {
       function get_balance() {
         let account := calldataload(4)
 
-        let ret := {
-          mstore(0, account)
-          mstore(32, 0)
-          sload(keccak256(0, 64))
-        }
+        let ret := get_mapping(account, 0)
         mstore(0, ret)
         return(0, 32)
       }
@@ -166,14 +162,7 @@ object "Contract" {
         let spender := calldataload(4)
         let added_value := calldataload(36)
 
-        let current := {
-          mstore(0, caller())
-          mstore(32, 1)
-          let first_slot := keccak256(0, 64)
-          mstore(0, spender)
-          mstore(32, first_slot)
-          sload(keccak256(0, 64))
-        }
+        let current := get_nested_mapping(caller(), spender, 1)
         // Nested mapping assignment
         mstore(0, caller())
         mstore(32, 1)
@@ -187,14 +176,7 @@ object "Contract" {
         let spender := calldataload(4)
         let subtracted_value := calldataload(36)
 
-        let current := {
-          mstore(0, caller())
-          mstore(32, 1)
-          let first_slot := keccak256(0, 64)
-          mstore(0, spender)
-          mstore(32, first_slot)
-          sload(keccak256(0, 64))
-        }
+        let current := get_nested_mapping(caller(), spender, 1)
         if iszero(iszero(lt(current, subtracted_value)))) { revert(0, 0) }
         // Nested mapping assignment
         mstore(0, caller())
@@ -209,14 +191,7 @@ object "Contract" {
         let owner_addr := calldataload(4)
         let spender := calldataload(36)
 
-        let ret := {
-          mstore(0, owner_addr)
-          mstore(32, 1)
-          let first_slot := keccak256(0, 64)
-          mstore(0, spender)
-          mstore(32, first_slot)
-          sload(keccak256(0, 64))
-        }
+        let ret := get_nested_mapping(owner_addr, spender, 1)
         mstore(0, ret)
         return(0, 32)
       }
@@ -226,20 +201,9 @@ object "Contract" {
         let spender := calldataload(36)
         let amount := calldataload(68)
 
-        let allowed := {
-          mstore(0, owner_addr)
-          mstore(32, 1)
-          let first_slot := keccak256(0, 64)
-          mstore(0, spender)
-          mstore(32, first_slot)
-          sload(keccak256(0, 64))
-        }
+        let allowed := get_nested_mapping(owner_addr, spender, 1)
         if iszero(iszero(lt(allowed, amount)))) { revert(0, 0) }
-        if iszero(iszero(lt({
-          mstore(0, owner_addr)
-          mstore(32, 0)
-          sload(keccak256(0, 64))
-        }, amount)))) { revert(0, 0) }
+        if iszero(iszero(lt(get_mapping(owner_addr, 0), amount)))) { revert(0, 0) }
         // Nested mapping assignment
         mstore(0, owner_addr)
         mstore(32, 1)
@@ -249,18 +213,10 @@ object "Contract" {
         sstore(keccak256(0, 64), checked_sub(allowed, amount))
         mstore(0, owner_addr)
         mstore(32, 0)
-        sstore(keccak256(0, 64), checked_sub({
-          mstore(0, owner_addr)
-          mstore(32, 0)
-          sload(keccak256(0, 64))
-        }, amount))
+        sstore(keccak256(0, 64), checked_sub(get_mapping(owner_addr, 0), amount))
         mstore(0, spender)
         mstore(32, 0)
-        sstore(keccak256(0, 64), checked_add({
-          mstore(0, spender)
-          mstore(32, 0)
-          sload(keccak256(0, 64))
-        }, amount))
+        sstore(keccak256(0, 64), checked_add(get_mapping(spender, 0), amount))
       }
 
       function set_approval_status() {
@@ -276,11 +232,7 @@ object "Contract" {
       function check_approval() {
         let account := calldataload(4)
 
-        let ret := {
-          mstore(0, account)
-          mstore(32, 2)
-          sload(keccak256(0, 64))
-        }
+        let ret := get_mapping(account, 2)
         mstore(0, ret)
         return(0, 32)
       }
@@ -293,18 +245,10 @@ object "Contract" {
         if iszero(iszero(eq(to, 0)))) { revert(0, 0) }
         mstore(0, to)
         mstore(32, 0)
-        sstore(keccak256(0, 64), checked_add({
-          mstore(0, to)
-          mstore(32, 0)
-          sload(keccak256(0, 64))
-        }, amount))
+        sstore(keccak256(0, 64), checked_add(get_mapping(to, 0), amount))
         sstore(3, checked_add(sload(3), amount))
         mstore(0, to)
-        mstore(32, {
-          mstore(0, to)
-          mstore(32, 0)
-          sload(keccak256(0, 64))
-        })
+        mstore(32, get_mapping(to, 0))
         log1(0, 64, 0x000000000000000000000000000000000000000000000000bbe37ba9e0ef6239)
       }
 
@@ -313,25 +257,13 @@ object "Contract" {
         let amount := calldataload(36)
 
         if iszero(eq(caller(), sload(4))) { revert(0, 0) }
-        if iszero(iszero(lt({
-          mstore(0, from_addr)
-          mstore(32, 0)
-          sload(keccak256(0, 64))
-        }, amount)))) { revert(0, 0) }
+        if iszero(iszero(lt(get_mapping(from_addr, 0), amount)))) { revert(0, 0) }
         mstore(0, from_addr)
         mstore(32, 0)
-        sstore(keccak256(0, 64), checked_sub({
-          mstore(0, from_addr)
-          mstore(32, 0)
-          sload(keccak256(0, 64))
-        }, amount))
+        sstore(keccak256(0, 64), checked_sub(get_mapping(from_addr, 0), amount))
         sstore(3, checked_sub(sload(3), amount))
         mstore(0, from_addr)
-        mstore(32, {
-          mstore(0, from_addr)
-          mstore(32, 0)
-          sload(keccak256(0, 64))
-        })
+        mstore(32, get_mapping(from_addr, 0))
         log1(0, 64, 0x000000000000000000000000000000000000000000000000bbe37ba9e0ef6239)
       }
 

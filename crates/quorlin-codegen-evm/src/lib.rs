@@ -145,6 +145,26 @@ impl EvmCodegen {
       }
 
       // ========================================
+      // STORAGE ACCESS HELPERS
+      // Clean mapping/array access without block expressions
+      // ========================================
+
+      function get_mapping(key, slot) -> result {
+          mstore(0, key)
+          mstore(32, slot)
+          result := sload(keccak256(0, 64))
+      }
+
+      function get_nested_mapping(key1, key2, slot) -> result {
+          mstore(0, key1)
+          mstore(32, slot)
+          let first_slot := keccak256(0, 64)
+          mstore(0, key2)
+          mstore(32, first_slot)
+          result := sload(keccak256(0, 64))
+      }
+
+      // ========================================
 "#.to_string()
     }
 
@@ -686,53 +706,30 @@ impl EvmCodegen {
                 Err(CodegenError::UnsupportedFeature(format!("Attribute access: {:?}.{}", base, attr)))
             }
             Expr::Index(target, index) => {
-                // Handle mapping/array access
-                // For mappings: storage_slot = keccak256(key, base_slot)
+                // Handle mapping/array access using helper functions
+                // This avoids problematic block expressions
 
                 // Check if target is a state variable (self.balances)
                 if let Expr::Attribute(base, attr) = &**target {
                     if let Expr::Ident(base_name) = &**base {
                         if base_name == "self" {
                             if let Some(&slot) = self.storage_layout.get(attr) {
-                                // Generate keccak256(key, slot) for mapping access
+                                // Use get_mapping helper function
                                 let key_code = self.generate_expression(index)?;
-
-                                // Store key and slot in memory, then hash
-                                let mut code = String::new();
-                                code.push_str("{\n");
-                                code.push_str(&format!("          mstore(0, {})\n", key_code));
-                                code.push_str(&format!("          mstore(32, {})\n", slot));
-                                code.push_str("          sload(keccak256(0, 64))\n");
-                                code.push_str("        }");
-                                return Ok(code);
+                                return Ok(format!("get_mapping({}, {})", key_code, slot));
                             }
                         }
                     }
                 } else if let Expr::Index(nested_target, nested_index) = &**target {
                     // Nested indexing: self.allowances[addr1][addr2]
-                    // First calculate the slot for the first index
                     if let Expr::Attribute(base, attr) = &**nested_target {
                         if let Expr::Ident(base_name) = &**base {
                             if base_name == "self" {
                                 if let Some(&slot) = self.storage_layout.get(attr) {
-                                    // First level: keccak256(nested_index, slot)
+                                    // Use get_nested_mapping helper function
                                     let first_key = self.generate_expression(nested_index)?;
-
-                                    // Second level: keccak256(index, first_slot)
                                     let second_key = self.generate_expression(index)?;
-
-                                    let mut code = String::new();
-                                    code.push_str("{\n");
-                                    // Calculate first level slot
-                                    code.push_str(&format!("          mstore(0, {})\n", first_key));
-                                    code.push_str(&format!("          mstore(32, {})\n", slot));
-                                    code.push_str("          let first_slot := keccak256(0, 64)\n");
-                                    // Calculate second level slot
-                                    code.push_str(&format!("          mstore(0, {})\n", second_key));
-                                    code.push_str("          mstore(32, first_slot)\n");
-                                    code.push_str("          sload(keccak256(0, 64))\n");
-                                    code.push_str("        }");
-                                    return Ok(code);
+                                    return Ok(format!("get_nested_mapping({}, {}, {})", first_key, second_key, slot));
                                 }
                             }
                         }
