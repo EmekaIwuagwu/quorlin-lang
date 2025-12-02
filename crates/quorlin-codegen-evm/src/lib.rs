@@ -219,16 +219,24 @@ impl EvmCodegen {
         if let Some(ctor) = constructor {
             code.push_str("    // Execute constructor\n");
 
-            // Load constructor parameters from calldata
-            for (i, param) in ctor.params.iter().enumerate() {
-                let offset = i * 32;
-                code.push_str(&format!(
-                    "    let {} := calldataload({})\n",
-                    param.name, offset
-                ));
-            }
-
+            // Load constructor parameters from code (appended to deployment bytecode)
+            // Constructor parameters are appended after the deployment code
             if !ctor.params.is_empty() {
+                code.push_str("    // Constructor parameters are appended to the bytecode\n");
+                code.push_str("    let paramsStart := datasize(\"Contract\")\n");
+
+                for (i, param) in ctor.params.iter().enumerate() {
+                    let offset = i * 32;
+                    code.push_str(&format!(
+                        "    codecopy({}, add(paramsStart, {}), 32)\n",
+                        offset, offset
+                    ));
+                    code.push_str(&format!(
+                        "    let {} := mload({})\n",
+                        param.name, offset
+                    ));
+                }
+
                 code.push_str("\n");
             }
 
