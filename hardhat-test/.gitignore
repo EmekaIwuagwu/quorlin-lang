@@ -4,3 +4,9 @@ artifacts/
 *.log
 .env
 package-lock.json
+
+# Generated files
+token.yul
+token.bin
+token-bytecode.txt
+deployed-address.txt
