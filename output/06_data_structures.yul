@@ -124,7 +124,7 @@ object "Contract" {
         let amount := calldataload(68)
 
         if iszero(eq(caller(), sload(4))) { revert(0, 0) }
-        if iszero(iszero(lt(get_mapping(from_addr, 0), amount)))) { revert(0, 0) }
+        if iszero(iszero(lt(get_mapping(from_addr, 0), amount))) { revert(0, 0) }
         mstore(0, from_addr)
         mstore(32, 0)
         sstore(keccak256(0, 64), checked_sub(get_mapping(from_addr, 0), amount))
@@ -177,7 +177,7 @@ object "Contract" {
         let subtracted_value := calldataload(36)
 
         let current := get_nested_mapping(caller(), spender, 1)
-        if iszero(iszero(lt(current, subtracted_value)))) { revert(0, 0) }
+        if iszero(iszero(lt(current, subtracted_value))) { revert(0, 0) }
         // Nested mapping assignment
         mstore(0, caller())
         mstore(32, 1)
@@ -202,8 +202,8 @@ object "Contract" {
         let amount := calldataload(68)
 
         let allowed := get_nested_mapping(owner_addr, spender, 1)
-        if iszero(iszero(lt(allowed, amount)))) { revert(0, 0) }
-        if iszero(iszero(lt(get_mapping(owner_addr, 0), amount)))) { revert(0, 0) }
+        if iszero(iszero(lt(allowed, amount))) { revert(0, 0) }
+        if iszero(iszero(lt(get_mapping(owner_addr, 0), amount))) { revert(0, 0) }
         // Nested mapping assignment
         mstore(0, owner_addr)
         mstore(32, 1)
@@ -242,7 +242,7 @@ object "Contract" {
         let amount := calldataload(36)
 
         if iszero(eq(caller(), sload(4))) { revert(0, 0) }
-        if iszero(iszero(eq(to, 0)))) { revert(0, 0) }
+        if iszero(iszero(eq(to, 0))) { revert(0, 0) }
         mstore(0, to)
         mstore(32, 0)
         sstore(keccak256(0, 64), checked_add(get_mapping(to, 0), amount))
@@ -257,7 +257,7 @@ object "Contract" {
         let amount := calldataload(36)
 
         if iszero(eq(caller(), sload(4))) { revert(0, 0) }
-        if iszero(iszero(lt(get_mapping(from_addr, 0), amount)))) { revert(0, 0) }
+        if iszero(iszero(lt(get_mapping(from_addr, 0), amount))) { revert(0, 0) }
         mstore(0, from_addr)
         mstore(32, 0)
         sstore(keccak256(0, 64), checked_sub(get_mapping(from_addr, 0), amount))

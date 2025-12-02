@@ -96,8 +96,8 @@ object "Contract" {
         let to := calldataload(4)
         let amount := calldataload(36)
 
-        if iszero(iszero(lt(get_mapping(caller(), 4), amount)))) { revert(0, 0) }
-        if iszero(iszero(eq(to, 0)))) { revert(0, 0) }
+        if iszero(iszero(lt(get_mapping(caller(), 4), amount))) { revert(0, 0) }
+        if iszero(iszero(eq(to, 0))) { revert(0, 0) }
         mstore(0, caller())
         mstore(32, 4)
         sstore(keccak256(0, 64), checked_sub(get_mapping(caller(), 4), amount))
@@ -117,7 +117,7 @@ object "Contract" {
         let spender := calldataload(4)
         let amount := calldataload(36)
 
-        if iszero(iszero(eq(spender, 0)))) { revert(0, 0) }
+        if iszero(iszero(eq(spender, 0))) { revert(0, 0) }
         // Nested mapping assignment
         mstore(0, caller())
         mstore(32, 5)
@@ -139,9 +139,9 @@ object "Contract" {
         let to := calldataload(36)
         let amount := calldataload(68)
 
-        if iszero(iszero(lt(get_mapping(from_addr, 4), amount)))) { revert(0, 0) }
-        if iszero(iszero(lt(get_nested_mapping(from_addr, caller(), 5), amount)))) { revert(0, 0) }
-        if iszero(iszero(eq(to, 0)))) { revert(0, 0) }
+        if iszero(iszero(lt(get_mapping(from_addr, 4), amount))) { revert(0, 0) }
+        if iszero(iszero(lt(get_nested_mapping(from_addr, caller(), 5), amount))) { revert(0, 0) }
+        if iszero(iszero(eq(to, 0))) { revert(0, 0) }
         mstore(0, from_addr)
         mstore(32, 4)
         sstore(keccak256(0, 64), checked_sub(get_mapping(from_addr, 4), amount))

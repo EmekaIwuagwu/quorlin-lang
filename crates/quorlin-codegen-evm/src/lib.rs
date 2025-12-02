@@ -609,7 +609,7 @@ impl EvmCodegen {
                 };
 
                 if matches!(op, BinOp::NotEq | BinOp::LtEq | BinOp::GtEq) {
-                    Ok(format!("{}({}, {})))", op_code, left_code, right_code))
+                    Ok(format!("{}({}, {}))", op_code, left_code, right_code))
                 } else {
                     Ok(format!("{}({}, {})", op_code, left_code, right_code))
                 }
