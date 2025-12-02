@@ -255,7 +255,24 @@ impl Parser {
             }
         }
 
-        if self.match_token(&TokenType::Return) {
+        if self.match_token(&TokenType::Let) {
+            // let x: type = value (local variable declaration)
+            let ident = self.consume_ident("Expected variable name after 'let'")?;
+            let target = Expr::Ident(ident);
+
+            self.consume(&TokenType::Colon, "Expected ':' after variable name")?;
+            let type_annotation = Some(self.parse_type()?);
+
+            self.consume(&TokenType::Eq, "Expected '=' in let statement")?;
+            let value = self.parse_expr()?;
+            self.skip_newlines();
+
+            Ok(Stmt::Assign(AssignStmt {
+                target,
+                value,
+                type_annotation,
+            }))
+        } else if self.match_token(&TokenType::Return) {
             let value = if self.check(&TokenType::Newline) {
                 None
             } else {
@@ -361,12 +378,149 @@ impl Parser {
                 type_annotation: None,
                 value,
             }))
+        } else if self.match_token(&TokenType::If) {
+            self.parse_if_stmt()
+        } else if self.match_token(&TokenType::While) {
+            self.parse_while_stmt()
+        } else if self.match_token(&TokenType::For) {
+            self.parse_for_stmt()
+        } else if self.match_token(&TokenType::Break) {
+            self.skip_newlines();
+            Ok(Stmt::Break)
+        } else if self.match_token(&TokenType::Continue) {
+            self.skip_newlines();
+            Ok(Stmt::Continue)
+        } else if self.match_token(&TokenType::Raise) {
+            // raise ErrorName(args)
+            let error = self.consume_ident("Expected error name")?;
+            self.consume(&TokenType::LParen, "Expected '('")?;
+
+            let mut args = Vec::new();
+            if !self.check(&TokenType::RParen) {
+                loop {
+                    args.push(self.parse_expr()?);
+                    if !self.match_token(&TokenType::Comma) {
+                        break;
+                    }
+                }
+            }
+
+            self.consume(&TokenType::RParen, "Expected ')'")?;
+            self.skip_newlines();
+
+            Ok(Stmt::Raise(RaiseStmt { error, args }))
         } else {
             Err(ParseError::UnexpectedToken(
                 self.current,
                 format!("Expected statement, found {:?}", self.peek()),
             ))
         }
+    }
+
+    fn parse_if_stmt(&mut self) -> Result<Stmt, ParseError> {
+        // if condition:
+        //     body
+        // elif condition:
+        //     body
+        // else:
+        //     body
+
+        let condition = self.parse_expr()?;
+        self.consume(&TokenType::Colon, "Expected ':' after if condition")?;
+        self.skip_newlines();
+        self.consume(&TokenType::Indent, "Expected indented block after if")?;
+
+        let mut then_branch = Vec::new();
+        while !self.check(&TokenType::Dedent) && !self.is_at_end() {
+            then_branch.push(self.parse_stmt()?);
+            self.skip_newlines();
+        }
+        self.consume(&TokenType::Dedent, "Expected dedent after if block")?;
+
+        let mut elif_branches = Vec::new();
+        while self.match_token(&TokenType::Elif) {
+            let elif_cond = self.parse_expr()?;
+            self.consume(&TokenType::Colon, "Expected ':' after elif condition")?;
+            self.skip_newlines();
+            self.consume(&TokenType::Indent, "Expected indented block after elif")?;
+
+            let mut elif_body = Vec::new();
+            while !self.check(&TokenType::Dedent) && !self.is_at_end() {
+                elif_body.push(self.parse_stmt()?);
+                self.skip_newlines();
+            }
+            self.consume(&TokenType::Dedent, "Expected dedent after elif block")?;
+
+            elif_branches.push((elif_cond, elif_body));
+        }
+
+        let else_branch = if self.match_token(&TokenType::Else) {
+            self.consume(&TokenType::Colon, "Expected ':' after else")?;
+            self.skip_newlines();
+            self.consume(&TokenType::Indent, "Expected indented block after else")?;
+
+            let mut else_body = Vec::new();
+            while !self.check(&TokenType::Dedent) && !self.is_at_end() {
+                else_body.push(self.parse_stmt()?);
+                self.skip_newlines();
+            }
+            self.consume(&TokenType::Dedent, "Expected dedent after else block")?;
+
+            Some(else_body)
+        } else {
+            None
+        };
+
+        Ok(Stmt::If(IfStmt {
+            condition,
+            then_branch,
+            elif_branches,
+            else_branch,
+        }))
+    }
+
+    fn parse_while_stmt(&mut self) -> Result<Stmt, ParseError> {
+        // while condition:
+        //     body
+
+        let condition = self.parse_expr()?;
+        self.consume(&TokenType::Colon, "Expected ':' after while condition")?;
+        self.skip_newlines();
+        self.consume(&TokenType::Indent, "Expected indented block after while")?;
+
+        let mut body = Vec::new();
+        while !self.check(&TokenType::Dedent) && !self.is_at_end() {
+            body.push(self.parse_stmt()?);
+            self.skip_newlines();
+        }
+        self.consume(&TokenType::Dedent, "Expected dedent after while block")?;
+
+        Ok(Stmt::While(WhileStmt { condition, body }))
+    }
+
+    fn parse_for_stmt(&mut self) -> Result<Stmt, ParseError> {
+        // for variable in iterable:
+        //     body
+
+        let variable = self.consume_ident("Expected variable name after 'for'")?;
+        self.consume(&TokenType::In, "Expected 'in' after variable")?;
+        let iterable = self.parse_expr()?;
+        self.consume(&TokenType::Colon, "Expected ':' after for iterable")?;
+        self.skip_newlines();
+        self.consume(&TokenType::Indent, "Expected indented block after for")?;
+
+        let mut body = Vec::new();
+        while !self.check(&TokenType::Dedent) && !self.is_at_end() {
+            body.push(self.parse_stmt()?);
+            self.skip_newlines();
+        }
+        self.consume(&TokenType::Dedent, "Expected dedent after for block")?;
+
+        Ok(Stmt::For(ForStmt {
+            variable,
+            iterable,
+            body,
+        }))
     }
 
     fn parse_expr(&mut self) -> Result<Expr, ParseError> {
@@ -401,8 +555,8 @@ impl Parser {
     }
 
     fn parse_postfix(&mut self) -> Result<Expr, ParseError> {
-        // Parse primary expression
-        let mut expr = self.parse_primary()?;
+        // Parse unary expression first
+        let mut expr = self.parse_unary()?;
 
         // Handle postfix operations: ., (), and []
         loop {
@@ -434,6 +588,33 @@ impl Parser {
         }
 
         Ok(expr)
+    }
+
+    fn parse_unary(&mut self) -> Result<Expr, ParseError> {
+        // Check for unary operators: -, +, not
+        if let Some(token) = self.peek() {
+            match &token.token_type {
+                TokenType::Minus => {
+                    self.advance();
+                    let expr = self.parse_unary()?;
+                    return Ok(Expr::UnaryOp(UnaryOp::Neg, Box::new(expr)));
+                }
+                TokenType::Plus => {
+                    self.advance();
+                    let expr = self.parse_unary()?;
+                    return Ok(Expr::UnaryOp(UnaryOp::Pos, Box::new(expr)));
+                }
+                TokenType::Not => {
+                    self.advance();
+                    let expr = self.parse_unary()?;
+                    return Ok(Expr::UnaryOp(UnaryOp::Not, Box::new(expr)));
+                }
+                _ => {}
+            }
+        }
+
+        // No unary operator, parse primary
+        self.parse_primary()
     }
 
     fn parse_primary(&mut self) -> Result<Expr, ParseError> {
@@ -514,6 +695,16 @@ impl Parser {
                     Ok(Type::Simple("str".to_string()))
                 }
                 TokenType::Uint(size) => {
+                    let size = size.clone();
+                    self.advance();
+                    Ok(Type::Simple(size))
+                }
+                TokenType::Int(size) => {
+                    let size = size.clone();
+                    self.advance();
+                    Ok(Type::Simple(size))
+                }
+                TokenType::BytesN(size) => {
                     let size = size.clone();
                     self.advance();
                     Ok(Type::Simple(size))
