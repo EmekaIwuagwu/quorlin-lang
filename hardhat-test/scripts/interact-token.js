@@ -1,4 +1,4 @@
-const hre = require("hardhat");
+import hre from "hardhat";
 
 // Function selectors for the token contract
 const SELECTORS = {
@@ -60,11 +60,16 @@ async function sendTransaction(signer, contractAddress, selector, params = []) {
 }
 
 async function main() {
-  // Get contract address from command line or use default
-  const contractAddress = process.argv[2];
+  // Get contract address from environment variable or command line
+  const contractAddress = process.env.CONTRACT_ADDRESS || process.argv[process.argv.length - 1];
 
-  if (!contractAddress) {
-    console.error("Usage: npx hardhat run scripts/interact-token.js --network hardhat <CONTRACT_ADDRESS>");
+  // Basic validation - check if it looks like an address
+  if (!contractAddress || !contractAddress.startsWith('0x') || contractAddress.length !== 42) {
+    console.error("❌ Error: Please provide a valid contract address");
+    console.error("");
+    console.error("Usage:");
+    console.error("  CONTRACT_ADDRESS=0x... npx hardhat run scripts/interact-token.js --network localhost");
+    console.error("");
     process.exit(1);
   }
 
