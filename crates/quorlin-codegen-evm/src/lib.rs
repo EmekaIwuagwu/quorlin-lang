@@ -575,12 +575,16 @@ impl EvmCodegen {
                     BinOp::Mul => "checked_mul",  // ✅ Overflow protected
                     BinOp::Div => "checked_div",  // ✅ Division by zero protected
                     BinOp::Mod => "checked_mod",  // ✅ Modulo by zero protected
+                    // FloorDiv removed - use regular div
+                    BinOp::Pow => "exp",  // Exponentiation
                     BinOp::Eq => "eq",
                     BinOp::NotEq => "iszero(eq",
                     BinOp::Lt => "lt",
                     BinOp::Gt => "gt",
                     BinOp::LtEq => "iszero(gt",
                     BinOp::GtEq => "iszero(lt",
+                    BinOp::And => "and",
+                    BinOp::Or => "or",
                     _ => return Err(CodegenError::UnsupportedFeature(format!("BinOp {:?}", op))),
                 };
 
@@ -591,13 +595,14 @@ impl EvmCodegen {
                 }
             }
             Expr::Call(func, args) => {
+                // Generate argument code
+                let arg_codes: Vec<_> = args
+                    .iter()
+                    .map(|a| self.generate_expression(a))
+                    .collect::<Result<_, _>>()?;
+
                 // Handle special built-in functions
                 if let Expr::Ident(func_name) = &**func {
-                    let arg_codes: Vec<_> = args
-                        .iter()
-                        .map(|a| self.generate_expression(a))
-                        .collect::<Result<_, _>>()?;
-
                     match func_name.as_str() {
                         "address" => {
                             // address(0) -> 0, address(x) -> x
@@ -644,6 +649,18 @@ impl EvmCodegen {
                             Ok(format!("{}({})", func_name, arg_codes.join(", ")))
                         }
                     }
+                } else if let Expr::Attribute(base, method_name) = &**func {
+                    // Handle method calls like self.method_name()
+                    if let Expr::Ident(base_name) = &**base {
+                        if base_name == "self" {
+                            // Internal function call
+                            Ok(format!("{}({})", method_name, arg_codes.join(", ")))
+                        } else {
+                            Err(CodegenError::UnsupportedFeature(format!("Method calls on {}", base_name)))
+                        }
+                    } else {
+                        Err(CodegenError::UnsupportedFeature("Complex method calls".to_string()))
+                    }
                 } else {
                     Err(CodegenError::UnsupportedFeature("Complex function calls".to_string()))
                 }
@@ -666,7 +683,7 @@ impl EvmCodegen {
                         }
                     }
                 }
-                Err(CodegenError::UnsupportedFeature(format!("Attribute access: {}.{}", "base", attr)))
+                Err(CodegenError::UnsupportedFeature(format!("Attribute access: {:?}.{}", base, attr)))
             }
             Expr::Index(target, index) => {
                 // Handle mapping/array access

@@ -4,9 +4,6 @@ object "Contract" {
     // Constructor (deployment) code
     // Execute constructor
     sstore(0, 0x48656c6c6f2c20576f726c642100000000000000000000000000000000000000)
-    mstore(0, 0x0000000000000000000000000000000000000000000000000000000000000000)
-    mstore(32, 0x48656c6c6f2c20576f726c642100000000000000000000000000000000000000)
-    log1(0, 64, 0x0000000000000000000000000000000000000000000000002c632fc054247c12)
 
     // Copy runtime code to memory and return it
     datacopy(0, dataoffset("runtime"), datasize("runtime"))
@@ -71,10 +68,9 @@ object "Contract" {
       function set_message() {
         let new_message := calldataload(4)
 
-        mstore(0, sload(0))
-        mstore(32, new_message)
-        log1(0, 64, 0x0000000000000000000000000000000000000000000000002c632fc054247c12)
         sstore(0, new_message)
+        mstore(0, new_message)
+        log1(0, 32, 0x000000000000000000000000000000000000000000000000e180410c8841cc0c)
       }
 
     }

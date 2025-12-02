@@ -66,6 +66,9 @@ pub struct SemanticAnalyzer {
 
     /// Track initialized variables (for uninitialized variable detection)
     initialized_vars: std::collections::HashSet<String>,
+
+    /// Function return types (function_name -> return_type)
+    function_return_types: HashMap<String, Option<Type>>,
 }
 
 impl SemanticAnalyzer {
@@ -76,6 +79,7 @@ impl SemanticAnalyzer {
             type_env: HashMap::new(),
             current_function: None,
             initialized_vars: std::collections::HashSet::new(),
+            function_return_types: HashMap::new(),
         }
     }
 
@@ -151,6 +155,8 @@ impl SemanticAnalyzer {
             }
             ContractMember::Function(func) => {
                 self.symbols.define_function(&func.name)?;
+                // Store function return type for later type inference
+                self.function_return_types.insert(func.name.clone(), func.return_type.clone());
                 Ok(())
             }
             _ => Ok(()),
@@ -511,8 +517,15 @@ impl SemanticAnalyzer {
                 if let Expr::Attribute(base, method_name) = &**func {
                     if let Expr::Ident(base_name) = &**base {
                         if base_name == "self" {
-                            // Try to infer return type from function signature
-                            // For now, return unknown
+                            // Look up function return type
+                            if let Some(return_type) = self.function_return_types.get(method_name) {
+                                if let Some(typ) = return_type {
+                                    return Ok(typ.clone());
+                                } else {
+                                    // Function returns void
+                                    return Ok(Type::Simple("void".to_string()));
+                                }
+                            }
                         }
                     }
                 }

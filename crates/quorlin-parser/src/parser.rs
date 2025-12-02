@@ -524,13 +524,47 @@ impl Parser {
     }
 
     fn parse_expr(&mut self) -> Result<Expr, ParseError> {
-        self.parse_comparison()
+        self.parse_or()
     }
 
-    fn parse_comparison(&mut self) -> Result<Expr, ParseError> {
-        let mut expr = self.parse_postfix()?;
+    // Logical OR (lowest precedence)
+    fn parse_or(&mut self) -> Result<Expr, ParseError> {
+        let mut expr = self.parse_and()?;
 
-        // Handle binary operators: ==, !=, <, >, <=, >=, +, -, *, /, etc.
+        while let Some(token) = self.peek() {
+            if let TokenType::Or = token.token_type {
+                self.advance();
+                let right = self.parse_and()?;
+                expr = Expr::BinOp(Box::new(expr), BinOp::Or, Box::new(right));
+            } else {
+                break;
+            }
+        }
+
+        Ok(expr)
+    }
+
+    // Logical AND
+    fn parse_and(&mut self) -> Result<Expr, ParseError> {
+        let mut expr = self.parse_comparison()?;
+
+        while let Some(token) = self.peek() {
+            if let TokenType::And = token.token_type {
+                self.advance();
+                let right = self.parse_comparison()?;
+                expr = Expr::BinOp(Box::new(expr), BinOp::And, Box::new(right));
+            } else {
+                break;
+            }
+        }
+
+        Ok(expr)
+    }
+
+    // Comparison operators: ==, !=, <, >, <=, >=
+    fn parse_comparison(&mut self) -> Result<Expr, ParseError> {
+        let mut expr = self.parse_additive()?;
+
         while let Some(token) = self.peek() {
             let op = match &token.token_type {
                 TokenType::EqEq => BinOp::Eq,
@@ -539,23 +573,73 @@ impl Parser {
                 TokenType::Gt => BinOp::Gt,
                 TokenType::LtEq => BinOp::LtEq,
                 TokenType::GtEq => BinOp::GtEq,
-                TokenType::Plus => BinOp::Add,
-                TokenType::Minus => BinOp::Sub,
-                TokenType::Star => BinOp::Mul,
-                TokenType::Slash => BinOp::Div,
                 _ => break,
             };
 
             self.advance();
-            let right = self.parse_postfix()?;
+            let right = self.parse_additive()?;
             expr = Expr::BinOp(Box::new(expr), op, Box::new(right));
         }
 
         Ok(expr)
     }
 
+    // Addition and subtraction
+    fn parse_additive(&mut self) -> Result<Expr, ParseError> {
+        let mut expr = self.parse_multiplicative()?;
+
+        while let Some(token) = self.peek() {
+            let op = match &token.token_type {
+                TokenType::Plus => BinOp::Add,
+                TokenType::Minus => BinOp::Sub,
+                _ => break,
+            };
+
+            self.advance();
+            let right = self.parse_multiplicative()?;
+            expr = Expr::BinOp(Box::new(expr), op, Box::new(right));
+        }
+
+        Ok(expr)
+    }
+
+    // Multiplication, division, and modulo
+    fn parse_multiplicative(&mut self) -> Result<Expr, ParseError> {
+        let mut expr = self.parse_power()?;
+
+        while let Some(token) = self.peek() {
+            let op = match &token.token_type {
+                TokenType::Star => BinOp::Mul,
+                TokenType::Slash => BinOp::Div,
+                TokenType::Percent => BinOp::Mod,
+                _ => break,
+            };
+
+            self.advance();
+            let right = self.parse_power()?;
+            expr = Expr::BinOp(Box::new(expr), op, Box::new(right));
+        }
+
+        Ok(expr)
+    }
+
+    // Power operator (right-associative)
+    fn parse_power(&mut self) -> Result<Expr, ParseError> {
+        let mut expr = self.parse_postfix()?;
+
+        if let Some(token) = self.peek() {
+            if let TokenType::DoubleStar = token.token_type {
+                self.advance();
+                let right = self.parse_power()?; // Right-associative
+                expr = Expr::BinOp(Box::new(expr), BinOp::Pow, Box::new(right));
+            }
+        }
+
+        Ok(expr)
+    }
+
     fn parse_postfix(&mut self) -> Result<Expr, ParseError> {
-        // Parse unary expression first
+        // Parse unary expression first (which handles primary + unary ops)
         let mut expr = self.parse_unary()?;
 
         // Handle postfix operations: ., (), and []
@@ -606,15 +690,53 @@ impl Parser {
                 }
                 TokenType::Not => {
                     self.advance();
-                    let expr = self.parse_unary()?;
+                    // For 'not', parse a postfix expression (primary + postfix ops)
+                    // This allows: not self.is_active
+                    let expr = self.parse_atom_with_postfix()?;
                     return Ok(Expr::UnaryOp(UnaryOp::Not, Box::new(expr)));
                 }
                 _ => {}
             }
         }
 
-        // No unary operator, parse primary
-        self.parse_primary()
+        // No unary operator, parse atomic expression with postfix
+        self.parse_atom_with_postfix()
+    }
+
+    fn parse_atom_with_postfix(&mut self) -> Result<Expr, ParseError> {
+        // Parse primary (atomic) expression
+        let mut expr = self.parse_primary()?;
+
+        // Handle postfix operations: ., (), and []
+        loop {
+            if self.match_token(&TokenType::Dot) {
+                let attr = self.consume_ident("Expected attribute name")?;
+                expr = Expr::Attribute(Box::new(expr), attr);
+            } else if self.check(&TokenType::LParen) {
+                self.advance();
+                let mut args = Vec::new();
+
+                if !self.check(&TokenType::RParen) {
+                    loop {
+                        args.push(self.parse_expr()?);
+                        if !self.match_token(&TokenType::Comma) {
+                            break;
+                        }
+                    }
+                }
+
+                self.consume(&TokenType::RParen, "Expected ')'")?;
+                expr = Expr::Call(Box::new(expr), args);
+            } else if self.match_token(&TokenType::LBracket) {
+                let index = self.parse_expr()?;
+                self.consume(&TokenType::RBracket, "Expected ']'")?;
+                expr = Expr::Index(Box::new(expr), Box::new(index));
+            } else {
+                break;
+            }
+        }
+
+        Ok(expr)
     }
 
     fn parse_primary(&mut self) -> Result<Expr, ParseError> {
@@ -668,6 +790,13 @@ impl Parser {
                     let size = size.clone();
                     self.advance();
                     Ok(Expr::Ident(size))
+                }
+                TokenType::LParen => {
+                    // Parenthesized expression
+                    self.advance();
+                    let expr = self.parse_expr()?;
+                    self.consume(&TokenType::RParen, "Expected ')' after expression")?;
+                    Ok(expr)
                 }
                 _ => Err(ParseError::UnexpectedToken(
                     self.current,

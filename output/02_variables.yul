@@ -1,12 +1,11 @@
-// Contract: HelloWorld
+// Contract: VariablesExample
 object "Contract" {
   code {
     // Constructor (deployment) code
     // Execute constructor
-    sstore(0, 0x48656c6c6f2c20576f726c642100000000000000000000000000000000000000)
-    mstore(0, 0x0000000000000000000000000000000000000000000000000000000000000000)
-    mstore(32, 0x48656c6c6f2c20576f726c642100000000000000000000000000000000000000)
-    log1(0, 64, 0x0000000000000000000000000000000000000000000000002c632fc054247c12)
+    let initial_owner := calldataload(0)
+
+    sstore(5, initial_owner)
 
     // Copy runtime code to memory and return it
     datacopy(0, dataoffset("runtime"), datasize("runtime"))
@@ -54,27 +53,64 @@ object "Contract" {
       // ========================================
       // Function dispatcher
       switch selector()
-      case 0x7727cda7 { get_message() }
-      case 0x01d1714f { set_message() }
+      case 0xffb0fd47 { demonstrate_local_variables() }
+      case 0x3803a5a6 { demonstrate_state_updates() }
+      case 0x989d4374 { demonstrate_special_variables() }
+      case 0x9e17db73 { get_counter() }
+      case 0x0b4a949d { get_owner() }
+      case 0xe1bbded1 { get_status() }
       default { revert(0, 0) }
 
       function selector() -> s {
         s := div(calldataload(0), 0x100000000000000000000000000000000000000000000000000000000)
       }
 
-      function get_message() {
+      function demonstrate_local_variables() {
+        let x := 42
+        let y := 10
+        let sum := checked_add(x, y)
+        let difference := checked_sub(x, y)
+        let product := checked_mul(x, y)
+        let quotient := checked_div(x, y)
+        sstore(0, sum)
+      }
+
+      function demonstrate_state_updates() {
+        sstore(0, 100)
+        sstore(0, checked_add(sload(0), 50))
+        sstore(0, checked_sub(sload(0), 30))
+        sstore(0, checked_mul(sload(0), 2))
+        sstore(0, checked_div(sload(0), 4))
+        sstore(3, 1)
+        sstore(4, iszero(sload(3)))
+      }
+
+      function demonstrate_special_variables() {
+        let caller := caller()
+        let payment := callvalue()
+        let current_time := timestamp()
+        let current_block := number()
+        if gt(callvalue(), 0) {
+          sstore(5, caller())
+        }
+      }
+
+      function get_counter() {
         let ret := sload(0)
         mstore(0, ret)
         return(0, 32)
       }
 
-      function set_message() {
-        let new_message := calldataload(4)
+      function get_owner() {
+        let ret := sload(5)
+        mstore(0, ret)
+        return(0, 32)
+      }
 
-        mstore(0, sload(0))
-        mstore(32, new_message)
-        log1(0, 64, 0x0000000000000000000000000000000000000000000000002c632fc054247c12)
-        sstore(0, new_message)
+      function get_status() {
+        let ret := sload(3)
+        mstore(0, ret)
+        return(0, 32)
       }
 
     }

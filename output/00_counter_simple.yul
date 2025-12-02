@@ -62,22 +62,22 @@ object "Contract" {
       }
 
       function get_count() {
-        let ret := 0
+        let ret := sload(0)
         mstore(0, ret)
         return(0, 32)
       }
 
       function increment() {
-        sstore(0, checked_add(0, 1))
-        mstore(0, 0)
+        sstore(0, checked_add(sload(0), 1))
+        mstore(0, sload(0))
         log1(0, 32, 0x000000000000000000000000000000000000000000000000444cf4967a58f27a)
       }
 
       function add() {
         let amount := calldataload(4)
 
-        sstore(0, checked_add(0, amount))
-        mstore(0, 0)
+        sstore(0, checked_add(sload(0), amount))
+        mstore(0, sload(0))
         log1(0, 32, 0x000000000000000000000000000000000000000000000000444cf4967a58f27a)
       }
 
