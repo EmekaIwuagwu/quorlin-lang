@@ -1,4 +1,4 @@
-const hre = require("hardhat");
+import hre from "hardhat";
 
 // Function selectors for the token contract
 const SELECTORS = {
