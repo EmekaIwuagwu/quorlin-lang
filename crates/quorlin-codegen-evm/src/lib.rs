@@ -575,12 +575,16 @@ impl EvmCodegen {
                     BinOp::Mul => "checked_mul",  // ✅ Overflow protected
                     BinOp::Div => "checked_div",  // ✅ Division by zero protected
                     BinOp::Mod => "checked_mod",  // ✅ Modulo by zero protected
+                    // FloorDiv removed - use regular div
+                    BinOp::Pow => "exp",  // Exponentiation
                     BinOp::Eq => "eq",
                     BinOp::NotEq => "iszero(eq",
                     BinOp::Lt => "lt",
                     BinOp::Gt => "gt",
                     BinOp::LtEq => "iszero(gt",
                     BinOp::GtEq => "iszero(lt",
+                    BinOp::And => "and",
+                    BinOp::Or => "or",
                     _ => return Err(CodegenError::UnsupportedFeature(format!("BinOp {:?}", op))),
                 };
 
@@ -666,7 +670,7 @@ impl EvmCodegen {
                         }
                     }
                 }
-                Err(CodegenError::UnsupportedFeature(format!("Attribute access: {}.{}", "base", attr)))
+                Err(CodegenError::UnsupportedFeature(format!("Attribute access: {:?}.{}", base, attr)))
             }
             Expr::Index(target, index) => {
                 // Handle mapping/array access

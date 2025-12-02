@@ -530,7 +530,7 @@ impl Parser {
     fn parse_comparison(&mut self) -> Result<Expr, ParseError> {
         let mut expr = self.parse_postfix()?;
 
-        // Handle binary operators: ==, !=, <, >, <=, >=, +, -, *, /, etc.
+        // Handle binary operators: ==, !=, <, >, <=, >=, +, -, *, /, %, //, **, and, or
         while let Some(token) = self.peek() {
             let op = match &token.token_type {
                 TokenType::EqEq => BinOp::Eq,
@@ -543,6 +543,11 @@ impl Parser {
                 TokenType::Minus => BinOp::Sub,
                 TokenType::Star => BinOp::Mul,
                 TokenType::Slash => BinOp::Div,
+                TokenType::Percent => BinOp::Mod,
+                // FloorDiv removed - // now used for comments
+                TokenType::DoubleStar => BinOp::Pow,
+                TokenType::And => BinOp::And,
+                TokenType::Or => BinOp::Or,
                 _ => break,
             };
 
@@ -555,7 +560,7 @@ impl Parser {
     }
 
     fn parse_postfix(&mut self) -> Result<Expr, ParseError> {
-        // Parse unary expression first
+        // Parse unary expression first (which handles primary + unary ops)
         let mut expr = self.parse_unary()?;
 
         // Handle postfix operations: ., (), and []
@@ -606,15 +611,53 @@ impl Parser {
                 }
                 TokenType::Not => {
                     self.advance();
-                    let expr = self.parse_unary()?;
+                    // For 'not', parse a postfix expression (primary + postfix ops)
+                    // This allows: not self.is_active
+                    let expr = self.parse_atom_with_postfix()?;
                     return Ok(Expr::UnaryOp(UnaryOp::Not, Box::new(expr)));
                 }
                 _ => {}
             }
         }
 
-        // No unary operator, parse primary
-        self.parse_primary()
+        // No unary operator, parse atomic expression with postfix
+        self.parse_atom_with_postfix()
+    }
+
+    fn parse_atom_with_postfix(&mut self) -> Result<Expr, ParseError> {
+        // Parse primary (atomic) expression
+        let mut expr = self.parse_primary()?;
+
+        // Handle postfix operations: ., (), and []
+        loop {
+            if self.match_token(&TokenType::Dot) {
+                let attr = self.consume_ident("Expected attribute name")?;
+                expr = Expr::Attribute(Box::new(expr), attr);
+            } else if self.check(&TokenType::LParen) {
+                self.advance();
+                let mut args = Vec::new();
+
+                if !self.check(&TokenType::RParen) {
+                    loop {
+                        args.push(self.parse_expr()?);
+                        if !self.match_token(&TokenType::Comma) {
+                            break;
+                        }
+                    }
+                }
+
+                self.consume(&TokenType::RParen, "Expected ')'")?;
+                expr = Expr::Call(Box::new(expr), args);
+            } else if self.match_token(&TokenType::LBracket) {
+                let index = self.parse_expr()?;
+                self.consume(&TokenType::RBracket, "Expected ']'")?;
+                expr = Expr::Index(Box::new(expr), Box::new(index));
+            } else {
+                break;
+            }
+        }
+
+        Ok(expr)
     }
 
     fn parse_primary(&mut self) -> Result<Expr, ParseError> {
@@ -668,6 +711,13 @@ impl Parser {
                     let size = size.clone();
                     self.advance();
                     Ok(Expr::Ident(size))
+                }
+                TokenType::LParen => {
+                    // Parenthesized expression
+                    self.advance();
+                    let expr = self.parse_expr()?;
+                    self.consume(&TokenType::RParen, "Expected ')' after expression")?;
+                    Ok(expr)
                 }
                 _ => Err(ParseError::UnexpectedToken(
                     self.current,

@@ -211,7 +211,7 @@ object "Contract" {
       }
 
       function get_total_supply() {
-        let ret := 3
+        let ret := sload(3)
         mstore(0, ret)
         return(0, 32)
       }
