@@ -51,6 +51,26 @@ object "Contract" {
       }
 
       // ========================================
+      // STORAGE ACCESS HELPERS
+      // Clean mapping/array access without block expressions
+      // ========================================
+
+      function get_mapping(key, slot) -> result {
+          mstore(0, key)
+          mstore(32, slot)
+          result := sload(keccak256(0, 64))
+      }
+
+      function get_nested_mapping(key1, key2, slot) -> result {
+          mstore(0, key1)
+          mstore(32, slot)
+          let first_slot := keccak256(0, 64)
+          mstore(0, key2)
+          mstore(32, first_slot)
+          result := sload(keccak256(0, 64))
+      }
+
+      // ========================================
       // Function dispatcher
       switch selector()
       case 0xffb0fd47 { demonstrate_local_variables() }

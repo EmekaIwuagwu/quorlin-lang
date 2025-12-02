@@ -58,6 +58,26 @@ object "Contract" {
       }
 
       // ========================================
+      // STORAGE ACCESS HELPERS
+      // Clean mapping/array access without block expressions
+      // ========================================
+
+      function get_mapping(key, slot) -> result {
+          mstore(0, key)
+          mstore(32, slot)
+          result := sload(keccak256(0, 64))
+      }
+
+      function get_nested_mapping(key1, key2, slot) -> result {
+          mstore(0, key1)
+          mstore(32, slot)
+          let first_slot := keccak256(0, 64)
+          mstore(0, key2)
+          mstore(32, first_slot)
+          result := sload(keccak256(0, 64))
+      }
+
+      // ========================================
       // Function dispatcher
       switch selector()
       case 0xd44b3d19 { transfer() }
@@ -76,26 +96,14 @@ object "Contract" {
         let to := calldataload(4)
         let amount := calldataload(36)
 
-        if iszero(iszero(lt({
-          mstore(0, caller())
-          mstore(32, 4)
-          sload(keccak256(0, 64))
-        }, amount)))) { revert(0, 0) }
+        if iszero(iszero(lt(get_mapping(caller(), 4), amount)))) { revert(0, 0) }
         if iszero(iszero(eq(to, 0)))) { revert(0, 0) }
         mstore(0, caller())
         mstore(32, 4)
-        sstore(keccak256(0, 64), checked_sub({
-          mstore(0, caller())
-          mstore(32, 4)
-          sload(keccak256(0, 64))
-        }, amount))
+        sstore(keccak256(0, 64), checked_sub(get_mapping(caller(), 4), amount))
         mstore(0, to)
         mstore(32, 4)
-        sstore(keccak256(0, 64), checked_add({
-          mstore(0, to)
-          mstore(32, 4)
-          sload(keccak256(0, 64))
-        }, amount))
+        sstore(keccak256(0, 64), checked_add(get_mapping(to, 4), amount))
         mstore(0, caller())
         mstore(32, to)
         mstore(64, amount)
@@ -131,48 +139,22 @@ object "Contract" {
         let to := calldataload(36)
         let amount := calldataload(68)
 
-        if iszero(iszero(lt({
-          mstore(0, from_addr)
-          mstore(32, 4)
-          sload(keccak256(0, 64))
-        }, amount)))) { revert(0, 0) }
-        if iszero(iszero(lt({
-          mstore(0, from_addr)
-          mstore(32, 5)
-          let first_slot := keccak256(0, 64)
-          mstore(0, caller())
-          mstore(32, first_slot)
-          sload(keccak256(0, 64))
-        }, amount)))) { revert(0, 0) }
+        if iszero(iszero(lt(get_mapping(from_addr, 4), amount)))) { revert(0, 0) }
+        if iszero(iszero(lt(get_nested_mapping(from_addr, caller(), 5), amount)))) { revert(0, 0) }
         if iszero(iszero(eq(to, 0)))) { revert(0, 0) }
         mstore(0, from_addr)
         mstore(32, 4)
-        sstore(keccak256(0, 64), checked_sub({
-          mstore(0, from_addr)
-          mstore(32, 4)
-          sload(keccak256(0, 64))
-        }, amount))
+        sstore(keccak256(0, 64), checked_sub(get_mapping(from_addr, 4), amount))
         mstore(0, to)
         mstore(32, 4)
-        sstore(keccak256(0, 64), checked_add({
-          mstore(0, to)
-          mstore(32, 4)
-          sload(keccak256(0, 64))
-        }, amount))
+        sstore(keccak256(0, 64), checked_add(get_mapping(to, 4), amount))
         // Nested mapping assignment
         mstore(0, from_addr)
         mstore(32, 5)
         let first_slot := keccak256(0, 64)
         mstore(0, caller())
         mstore(32, first_slot)
-        sstore(keccak256(0, 64), checked_sub({
-          mstore(0, from_addr)
-          mstore(32, 5)
-          let first_slot := keccak256(0, 64)
-          mstore(0, caller())
-          mstore(32, first_slot)
-          sload(keccak256(0, 64))
-        }, amount))
+        sstore(keccak256(0, 64), checked_sub(get_nested_mapping(from_addr, caller(), 5), amount))
         mstore(0, from_addr)
         mstore(32, to)
         mstore(64, amount)
@@ -185,11 +167,7 @@ object "Contract" {
       function balance_of() {
         let owner := calldataload(4)
 
-        let ret := {
-          mstore(0, owner)
-          mstore(32, 4)
-          sload(keccak256(0, 64))
-        }
+        let ret := get_mapping(owner, 4)
         mstore(0, ret)
         return(0, 32)
       }
@@ -198,14 +176,7 @@ object "Contract" {
         let owner := calldataload(4)
         let spender := calldataload(36)
 
-        let ret := {
-          mstore(0, owner)
-          mstore(32, 5)
-          let first_slot := keccak256(0, 64)
-          mstore(0, spender)
-          mstore(32, first_slot)
-          sload(keccak256(0, 64))
-        }
+        let ret := get_nested_mapping(owner, spender, 5)
         mstore(0, ret)
         return(0, 32)
       }
