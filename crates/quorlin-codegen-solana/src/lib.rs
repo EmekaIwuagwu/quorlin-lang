@@ -348,10 +348,16 @@ impl SolanaCodegen {
             Stmt::Emit(emit) => {
                 // Emit event using msg! macro or custom event
                 code.push_str(&format!("{}emit!({}Event {{\n", indent_str, emit.event));
-                // For simplicity, we'll add fields based on args
-                for (i, arg) in emit.args.iter().enumerate() {
+
+                // Find the event definition to get proper field names
+                let event_info = self.events.iter()
+                    .find(|e| e.name == emit.event)
+                    .ok_or_else(|| CodegenError::Error(format!("Event '{}' not found", emit.event)))?;
+
+                // Use actual parameter names from event definition
+                for (param_info, arg) in event_info.params.iter().zip(emit.args.iter()) {
                     let arg_code = self.generate_expression(arg)?;
-                    code.push_str(&format!("{}    arg{}: {},\n", indent_str, i, arg_code));
+                    code.push_str(&format!("{}    {}: {},\n", indent_str, param_info.0, arg_code));
                 }
                 code.push_str(&format!("{}}});\n", indent_str));
             }
@@ -449,6 +455,12 @@ impl SolanaCodegen {
                     match func_name.as_str() {
                         "address" => {
                             if args.len() == 1 {
+                                // Special case: address(0) should be Pubkey::default()
+                                if let Expr::IntLiteral(n) = &args[0] {
+                                    if n == "0" {
+                                        return Ok("Pubkey::default()".to_string());
+                                    }
+                                }
                                 Ok(arg_codes[0].clone())
                             } else {
                                 Err(CodegenError::UnsupportedFeature("address() requires 1 argument".to_string()))
