@@ -35,16 +35,12 @@ pub mod token {
         let contract = &mut ctx.accounts.contract;
         let signer = ctx.accounts.signer.key();
 
-        let sender_balance = contract.balances.get(&signer).cloned().unwrap_or_default();
-        require!(sender_balance >= amount, ErrorCode::InsufficientBalance);
-        require!(to != Pubkey::default(), ErrorCode::ZeroAddress);
-
-        let new_sender_balance = sender_balance.checked_sub(amount).expect("arithmetic underflow");
-        let to_balance = contract.balances.get(&to).cloned().unwrap_or_default();
-        let new_to_balance = to_balance.checked_add(amount).expect("arithmetic overflow");
-
-        contract.balances.insert(signer, new_sender_balance);
-        contract.balances.insert(to, new_to_balance);
+        require!((contract.balances.get(&signer).cloned().unwrap_or_default() >= amount), ErrorCode::InsufficientBalance);
+        require!((to != Pubkey::default()), ErrorCode::ZeroAddress);
+        let temp_value_8 = contract.balances.get(&signer).cloned().unwrap_or_default().checked_sub(amount).expect("arithmetic underflow");
+        contract.balances.insert(signer, temp_value_8);
+        let temp_value_8 = contract.balances.get(&to).cloned().unwrap_or_default().checked_add(amount).expect("arithmetic overflow");
+        contract.balances.insert(to, temp_value_8);
         emit!(TransferEvent {
             from_addr: signer,
             to_addr: to,
@@ -80,21 +76,15 @@ pub mod token {
         let contract = &mut ctx.accounts.contract;
         let signer = ctx.accounts.signer.key();
 
-        let from_balance = contract.balances.get(&from_addr).cloned().unwrap_or_default();
-        let current_allowance = contract.allowances.get(&from_addr).and_then(|inner| inner.get(&signer)).cloned().unwrap_or_default();
-
-        require!(from_balance >= amount, ErrorCode::InsufficientBalance);
-        require!(current_allowance >= amount, ErrorCode::InsufficientAllowance);
-        require!(to != Pubkey::default(), ErrorCode::ZeroAddress);
-
-        let new_from_balance = from_balance.checked_sub(amount).expect("arithmetic underflow");
-        let to_balance = contract.balances.get(&to).cloned().unwrap_or_default();
-        let new_to_balance = to_balance.checked_add(amount).expect("arithmetic overflow");
-        let new_allowance = current_allowance - amount;
-
-        contract.balances.insert(from_addr, new_from_balance);
-        contract.balances.insert(to, new_to_balance);
-        contract.allowances.entry(from_addr).or_insert_with(HashMap::new).insert(signer, new_allowance);
+        require!((contract.balances.get(&from_addr).cloned().unwrap_or_default() >= amount), ErrorCode::InsufficientBalance);
+        require!((contract.allowances.get(&from_addr).and_then(|inner| inner.get(&signer)).cloned().unwrap_or_default() >= amount), ErrorCode::InsufficientAllowance);
+        require!((to != Pubkey::default()), ErrorCode::ZeroAddress);
+        let temp_value_8 = contract.balances.get(&from_addr).cloned().unwrap_or_default().checked_sub(amount).expect("arithmetic underflow");
+        contract.balances.insert(from_addr, temp_value_8);
+        let temp_value_8 = contract.balances.get(&to).cloned().unwrap_or_default().checked_add(amount).expect("arithmetic overflow");
+        contract.balances.insert(to, temp_value_8);
+        let temp_value_8 = (contract.allowances.get(&from_addr).and_then(|inner| inner.get(&signer)).cloned().unwrap_or_default() - amount);
+        contract.allowances.entry(from_addr).or_insert_with(HashMap::new).insert(signer, temp_value_8);
         emit!(TransferEvent {
             from_addr: from_addr,
             to_addr: to,
@@ -190,8 +180,8 @@ pub struct GetTotalSupply<'info> {
 #[account]
 pub struct ContractState {
     pub name: String,
-    pub decimals: u8,
     pub total_supply: u128,
+    pub decimals: u8,
     pub allowances: HashMap<Pubkey, HashMap<Pubkey, u128>>,
     pub symbol: String,
     pub balances: HashMap<Pubkey, u128>,
