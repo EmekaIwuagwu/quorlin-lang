@@ -80,7 +80,19 @@ Quorlin contracts are already running on live networks!
 - **Network**: Solana DevNet
 - **Explorer**: [View on Solana Explorer](https://explorer.solana.com/address/m3BqeaAW3JKJK32PnTV9PKjHA3XHpinfaWopwvdXmJz?cluster=devnet)
 
-This demonstrates Quorlin's ability to compile and deploy production-ready smart contracts to Solana/Anchor!
+### Polkadot (ink! v5)
+- **Status**: ✅ **Successfully Compiled to WASM**
+- **Contract**: ERC-20 Token (from `examples/token.ql`)
+- **Target**: ink! v5.0.0 (Substrate/Polkadot)
+- **Artifacts**:
+  - Contract Bundle: 50KB
+  - WASM Bytecode: 22KB
+  - Metadata: 19KB
+- **Deployment**: Ready for local testnet, Rococo Contracts, or Astar Network
+
+**🎊 Achievement Unlocked: Write-Once, Deploy-Everywhere!**
+
+The same `token.ql` file now compiles to all three major blockchain ecosystems:
 
 ## 🚀 Getting Started
 

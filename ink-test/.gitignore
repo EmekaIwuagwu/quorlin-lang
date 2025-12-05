@@ -1,0 +1,7 @@
+target/
+Cargo.lock
+*.contract
+*.wasm
+*.json
+node_modules/
+.DS_Store
