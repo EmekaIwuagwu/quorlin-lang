@@ -11,6 +11,11 @@ members = [
     "crates/quorlin-codegen-ink",
     "crates/quorlin-common",
 ]
+exclude = [
+    "ink-test",
+    "hardhat-test",
+    "anchor-test",
+]
 
 [workspace.dependencies]
 # Parser
