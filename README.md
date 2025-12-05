@@ -232,7 +232,7 @@ anchor deploy
 4. Fund wallet: `solana airdrop 2` (devnet only)
 5. Deploy: `anchor deploy`
 
-**Supported Networks:** Devnet, Testnet, Mainnet-beta
+**Supported Networks:** Devnet, Testnet and Mainnet-beta
 
 ### Deploy to Polkadot
 
