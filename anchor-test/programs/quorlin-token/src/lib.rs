@@ -2,7 +2,6 @@
 // Target: Solana/Anchor
 
 use anchor_lang::prelude::*;
-use std::collections::BTreeMap;
 
 declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
 
@@ -18,7 +17,11 @@ pub mod token {
         let signer = ctx.accounts.signer.key();
 
         contract.total_supply = initial_supply;
-        contract.balances.insert(signer, initial_supply);
+        if let Some(entry) = contract.balances.iter_mut().find(|(k, _)| k == &signer) {
+            entry.1 = initial_supply;
+        } else {
+            contract.balances.push((signer, initial_supply));
+        }
         emit!(TransferEvent {
             from_addr: Pubkey::default(),
             to_addr: signer,
@@ -35,12 +38,20 @@ pub mod token {
         let contract = &mut ctx.accounts.contract;
         let signer = ctx.accounts.signer.key();
 
-        require!((contract.balances.get(&signer).cloned().unwrap_or_default() >= amount), ErrorCode::InsufficientBalance);
+        require!((contract.balances.iter().find(|(k, _)| k == &signer).map(|(_, v)| *v).unwrap_or_default() >= amount), ErrorCode::InsufficientBalance);
         require!((to != Pubkey::default()), ErrorCode::ZeroAddress);
-        let temp_value_8 = contract.balances.get(&signer).cloned().unwrap_or_default().checked_sub(amount).expect("arithmetic underflow");
-        contract.balances.insert(signer, temp_value_8);
-        let temp_value_8 = contract.balances.get(&to).cloned().unwrap_or_default().checked_add(amount).expect("arithmetic overflow");
-        contract.balances.insert(to, temp_value_8);
+        let temp_value_8 = contract.balances.iter().find(|(k, _)| k == &signer).map(|(_, v)| *v).unwrap_or_default().checked_sub(amount).expect("arithmetic underflow");
+        if let Some(entry) = contract.balances.iter_mut().find(|(k, _)| k == &signer) {
+            entry.1 = temp_value_8;
+        } else {
+            contract.balances.push((signer, temp_value_8));
+        }
+        let temp_value_8 = contract.balances.iter().find(|(k, _)| k == &to).map(|(_, v)| *v).unwrap_or_default().checked_add(amount).expect("arithmetic overflow");
+        if let Some(entry) = contract.balances.iter_mut().find(|(k, _)| k == &to) {
+            entry.1 = temp_value_8;
+        } else {
+            contract.balances.push((to, temp_value_8));
+        }
         emit!(TransferEvent {
             from_addr: signer,
             to_addr: to,
@@ -58,7 +69,15 @@ pub mod token {
         let signer = ctx.accounts.signer.key();
 
         require!((spender != Pubkey::default()), ErrorCode::ZeroApproval);
-        contract.allowances.entry(signer).or_insert_with(BTreeMap::new).insert(spender, amount);
+        if let Some((_, inner)) = contract.allowances.iter_mut().find(|(k, _)| k == &signer) {
+            if let Some(entry) = inner.iter_mut().find(|(k, _)| k == &spender) {
+                entry.1 = amount;
+            } else {
+                inner.push((spender, amount));
+            }
+        } else {
+            contract.allowances.push((signer, vec![(spender, amount)]));
+        }
         emit!(ApprovalEvent {
             owner: signer,
             spender: spender,
@@ -76,15 +95,31 @@ pub mod token {
         let contract = &mut ctx.accounts.contract;
         let signer = ctx.accounts.signer.key();
 
-        require!((contract.balances.get(&from_addr).cloned().unwrap_or_default() >= amount), ErrorCode::InsufficientBalance);
-        require!((contract.allowances.get(&from_addr).and_then(|inner| inner.get(&signer)).cloned().unwrap_or_default() >= amount), ErrorCode::InsufficientAllowance);
+        require!((contract.balances.iter().find(|(k, _)| k == &from_addr).map(|(_, v)| *v).unwrap_or_default() >= amount), ErrorCode::InsufficientBalance);
+        require!((contract.allowances.iter().find(|(k, _)| k == &from_addr).and_then(|(_, inner)| inner.iter().find(|(k, _)| k == &signer).map(|(_, v)| *v)).unwrap_or_default() >= amount), ErrorCode::InsufficientAllowance);
         require!((to != Pubkey::default()), ErrorCode::ZeroAddress);
-        let temp_value_8 = contract.balances.get(&from_addr).cloned().unwrap_or_default().checked_sub(amount).expect("arithmetic underflow");
-        contract.balances.insert(from_addr, temp_value_8);
-        let temp_value_8 = contract.balances.get(&to).cloned().unwrap_or_default().checked_add(amount).expect("arithmetic overflow");
-        contract.balances.insert(to, temp_value_8);
-        let temp_value_8 = (contract.allowances.get(&from_addr).and_then(|inner| inner.get(&signer)).cloned().unwrap_or_default() - amount);
-        contract.allowances.entry(from_addr).or_insert_with(BTreeMap::new).insert(signer, temp_value_8);
+        let temp_value_8 = contract.balances.iter().find(|(k, _)| k == &from_addr).map(|(_, v)| *v).unwrap_or_default().checked_sub(amount).expect("arithmetic underflow");
+        if let Some(entry) = contract.balances.iter_mut().find(|(k, _)| k == &from_addr) {
+            entry.1 = temp_value_8;
+        } else {
+            contract.balances.push((from_addr, temp_value_8));
+        }
+        let temp_value_8 = contract.balances.iter().find(|(k, _)| k == &to).map(|(_, v)| *v).unwrap_or_default().checked_add(amount).expect("arithmetic overflow");
+        if let Some(entry) = contract.balances.iter_mut().find(|(k, _)| k == &to) {
+            entry.1 = temp_value_8;
+        } else {
+            contract.balances.push((to, temp_value_8));
+        }
+        let temp_value_8 = (contract.allowances.iter().find(|(k, _)| k == &from_addr).and_then(|(_, inner)| inner.iter().find(|(k, _)| k == &signer).map(|(_, v)| *v)).unwrap_or_default() - amount);
+        if let Some((_, inner)) = contract.allowances.iter_mut().find(|(k, _)| k == &from_addr) {
+            if let Some(entry) = inner.iter_mut().find(|(k, _)| k == &signer) {
+                entry.1 = temp_value_8;
+            } else {
+                inner.push((signer, temp_value_8));
+            }
+        } else {
+            contract.allowances.push((from_addr, vec![(signer, temp_value_8)]));
+        }
         emit!(TransferEvent {
             from_addr: from_addr,
             to_addr: to,
@@ -100,7 +135,7 @@ pub mod token {
         let contract = &mut ctx.accounts.contract;
         let signer = ctx.accounts.signer.key();
 
-        return Ok(contract.balances.get(&owner).cloned().unwrap_or_default());
+        return Ok(contract.balances.iter().find(|(k, _)| k == &owner).map(|(_, v)| *v).unwrap_or_default());
     }
 
     pub fn allowance(
@@ -111,7 +146,7 @@ pub mod token {
         let contract = &mut ctx.accounts.contract;
         let signer = ctx.accounts.signer.key();
 
-        return Ok(contract.allowances.get(&owner).and_then(|inner| inner.get(&spender)).cloned().unwrap_or_default());
+        return Ok(contract.allowances.iter().find(|(k, _)| k == &owner).and_then(|(_, inner)| inner.iter().find(|(k, _)| k == &spender).map(|(_, v)| *v)).unwrap_or_default());
     }
 
     pub fn get_total_supply(
@@ -181,10 +216,10 @@ pub struct GetTotalSupply<'info> {
 pub struct ContractState {
     pub name: String,
     pub symbol: String,
-    pub total_supply: u128,
-    pub balances: BTreeMap<Pubkey, u128>,
+    pub allowances: Vec<(Pubkey, Vec<(Pubkey, u128)>)>,
     pub decimals: u8,
-    pub allowances: BTreeMap<Pubkey, BTreeMap<Pubkey, u128>>,
+    pub total_supply: u128,
+    pub balances: Vec<(Pubkey, u128)>,
 }
 
 #[event]
