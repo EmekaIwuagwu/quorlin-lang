@@ -1,7 +1,7 @@
 //! # Quorlin Semantics - PRODUCTION-HARDENED VERSION
 //!
-//! This is an improved version with complete type checking and validation.
-//! See PRODUCTION_READINESS_REPORT.md for details on improvements.
+//! This is an improved version with complete type checking and validation functions.
+//! You can view the PRODUCTION_READINESS_REPORT.md for details on improvements.
 
 pub mod backend_consistency;
 pub mod security_analyzer;
@@ -72,7 +72,7 @@ pub struct SemanticAnalyzer {
 }
 
 impl SemanticAnalyzer {
-    /// Create a new semantic analyzer
+    /// Create a new semantic analyzer here -->
     pub fn new() -> Self {
         Self {
             symbols: symbol_table::SymbolTable::new(),
