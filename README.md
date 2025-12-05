@@ -14,19 +14,19 @@ A next-generation smart contract language that compiles to EVM, Solana, and Polk
 
 ---
 
-## 🌟 Why Quorlin?
+## Why Quorlin?
 
 Today's blockchain developers face an impossible choice: write in Solidity for EVM, Rust for Solana, or ink! for Polkadot. Each ecosystem has brilliant innovations, but **you must rewrite contracts from scratch for each target**.
 
 Quorlin solves this with:
 
-- **🐍 Python-like syntax** — If you know Python, you already know 90% of Quorlin
-- **🚀 Multi-chain compilation** — One `.ql` file → EVM bytecode, Solana BPF, ink! Wasm
-- **🔒 Security-first** — Built-in reentrancy guards, overflow protection, and static analysis
-- **⚡ Zero overhead** — Compiles to native bytecode for each chain, no runtime interpreter
-- **✅ Production-ready** — 100% of example contracts compile successfully to Yul bytecode
+- ** Python-like syntax** — If you know Python, you already know 90% of Quorlin
+- ** Multi-chain compilation** — One `.ql` file → EVM bytecode, Solana BPF, ink! Wasm
+- ** Security-first** — Built-in reentrancy guards, overflow protection, and static analysis
+- ** Zero overhead** — Compiles to native bytecode for each chain, no runtime interpreter
+- ** Production-ready** — 100% of example contracts compile successfully to Yul bytecode
 
-## 🎯 Quick Example
+##  Quick Example
 
 Here's a complete ERC-20 token in Quorlin:
 
@@ -70,7 +70,7 @@ contract Token:
 
 **One file. Three blockchains. Zero rewrites.**
 
-## 🎉 Live Deployments
+## Live Deployments
 
 Quorlin contracts are already running on live networks!
 
@@ -81,7 +81,7 @@ Quorlin contracts are already running on live networks!
 - **Explorer**: [View on Solana Explorer](https://explorer.solana.com/address/m3BqeaAW3JKJK32PnTV9PKjHA3XHpinfaWopwvdXmJz?cluster=devnet)
 
 ### Polkadot (Local Substrate Contracts Node)
-- **Status**: ✅ **DEPLOYED AND LIVE**
+- **Status**: **DEPLOYED AND LIVE**
 - **Contract Address**: `5Cmg5TKsLBoeTbU4MkSJekwG6LQ5nt2My98p411sQvJb2eYs`
 - **Code Hash**: `0xc4ab3367b8307d99b9dd81567016f5e73519d6a2ddbaf08c63c12814f777074a`
 - **Contract**: ERC-20 Token (from `examples/token.ql`)
@@ -89,13 +89,13 @@ Quorlin contracts are already running on live networks!
 - **Network**: Local Substrate Contracts Node
 - **Initial Supply**: 1,000,000 tokens
 - **Optimized Size**: 9.8KB WASM bytecode (71% reduction from 34.4KB)
-- **Deployment Status**: ✅ Successfully instantiated with Transfer event emitted
+- **Deployment Status**: Successfully instantiated with Transfer event emitted
 
-**🎊 Achievement Unlocked: Write-Once, Deploy-Everywhere!**
+** Achievement Unlocked: Write-Once, Deploy-Everywhere!**
 
 The same `token.ql` file now compiles to all three major blockchain ecosystems:
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Installation
 
@@ -172,17 +172,17 @@ ls -lh output/*.yul
 ```
 
 **All 9 examples compile successfully:**
-- ✅ `00_counter_simple.ql` - Basic counter contract (2.5K)
-- ✅ `01_hello_world.ql` - Hello world with storage (2.4K)
-- ✅ `01_hello_world_simple.ql` - Minimal hello world (2.2K)
-- ✅ `02_variables.ql` - Variable types and operations (3.2K)
-- ✅ `03_arithmetic.ql` - Arithmetic operations (4.3K)
-- ✅ `04_functions.ql` - Functions, parameters, return values (6.3K)
-- ✅ `05_control_flow.ql` - If/while/for loops, boolean logic (11K)
-- ✅ `06_data_structures.ql` - Mappings and data structures (9.8K)
-- ✅ `token.ql` - Full ERC-20 token implementation (6.2K)
+-  `00_counter_simple.ql` - Basic counter contract (2.5K)
+-  `01_hello_world.ql` - Hello world with storage (2.4K)
+-  `01_hello_world_simple.ql` - Minimal hello world (2.2K)
+-  `02_variables.ql` - Variable types and operations (3.2K)
+-  `03_arithmetic.ql` - Arithmetic operations (4.3K)
+-  `04_functions.ql` - Functions, parameters, return values (6.3K)
+-  `05_control_flow.ql` - If/while/for loops, boolean logic (11K)
+-  `06_data_structures.ql` - Mappings and data structures (9.8K)
+-  `token.ql` - Full ERC-20 token implementation (6.2K)
 
-## 🚢 Deploying to Blockchains
+##  Deploying to Blockchains
 
 Quorlin compiles to native code for each platform. Here's how to deploy:
 
@@ -271,7 +271,7 @@ For comprehensive step-by-step deployment instructions including:
 
 **See:** [Documentations/DEPLOYMENT_GUIDE.md](Documentations/DEPLOYMENT_GUIDE.md)
 
-## 📚 Language Features
+## Language Features
 
 ### Python-Compatible Syntax
 
