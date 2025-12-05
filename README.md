@@ -70,6 +70,18 @@ contract Token:
 
 **One file. Three blockchains. Zero rewrites.**
 
+## 🎉 Live Deployments
+
+Quorlin contracts are already running on live networks!
+
+### Solana DevNet
+- **Program ID**: `m3BqeaAW3JKJK32PnTV9PKjHA3XHpinfaWopwvdXmJz`
+- **Contract**: ERC-20 Token (from `examples/token.ql`)
+- **Network**: Solana DevNet
+- **Explorer**: [View on Solana Explorer](https://explorer.solana.com/address/m3BqeaAW3JKJK32PnTV9PKjHA3XHpinfaWopwvdXmJz?cluster=devnet)
+
+This demonstrates Quorlin's ability to compile and deploy production-ready smart contracts to Solana/Anchor!
+
 ## 🚀 Getting Started
 
 ### Installation
