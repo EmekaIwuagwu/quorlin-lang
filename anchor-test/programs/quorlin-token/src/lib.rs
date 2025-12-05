@@ -2,7 +2,7 @@
 // Target: Solana/Anchor
 
 use anchor_lang::prelude::*;
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
 
@@ -58,7 +58,7 @@ pub mod token {
         let signer = ctx.accounts.signer.key();
 
         require!((spender != Pubkey::default()), ErrorCode::ZeroApproval);
-        contract.allowances.entry(signer).or_insert_with(HashMap::new).insert(spender, amount);
+        contract.allowances.entry(signer).or_insert_with(BTreeMap::new).insert(spender, amount);
         emit!(ApprovalEvent {
             owner: signer,
             spender: spender,
@@ -84,7 +84,7 @@ pub mod token {
         let temp_value_8 = contract.balances.get(&to).cloned().unwrap_or_default().checked_add(amount).expect("arithmetic overflow");
         contract.balances.insert(to, temp_value_8);
         let temp_value_8 = (contract.allowances.get(&from_addr).and_then(|inner| inner.get(&signer)).cloned().unwrap_or_default() - amount);
-        contract.allowances.entry(from_addr).or_insert_with(HashMap::new).insert(signer, temp_value_8);
+        contract.allowances.entry(from_addr).or_insert_with(BTreeMap::new).insert(signer, temp_value_8);
         emit!(TransferEvent {
             from_addr: from_addr,
             to_addr: to,
@@ -180,11 +180,11 @@ pub struct GetTotalSupply<'info> {
 #[account]
 pub struct ContractState {
     pub name: String,
-    pub total_supply: u128,
-    pub decimals: u8,
-    pub allowances: HashMap<Pubkey, HashMap<Pubkey, u128>>,
     pub symbol: String,
-    pub balances: HashMap<Pubkey, u128>,
+    pub total_supply: u128,
+    pub balances: BTreeMap<Pubkey, u128>,
+    pub decimals: u8,
+    pub allowances: BTreeMap<Pubkey, BTreeMap<Pubkey, u128>>,
 }
 
 #[event]
