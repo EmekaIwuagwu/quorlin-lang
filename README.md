@@ -80,15 +80,16 @@ Quorlin contracts are already running on live networks!
 - **Network**: Solana DevNet
 - **Explorer**: [View on Solana Explorer](https://explorer.solana.com/address/m3BqeaAW3JKJK32PnTV9PKjHA3XHpinfaWopwvdXmJz?cluster=devnet)
 
-### Polkadot (ink! v5)
-- **Status**: ✅ **Successfully Compiled to WASM**
+### Polkadot (Local Substrate Contracts Node)
+- **Status**: ✅ **DEPLOYED AND LIVE**
+- **Contract Address**: `5Cmg5TKsLBoeTbU4MkSJekwG6LQ5nt2My98p411sQvJb2eYs`
+- **Code Hash**: `0xc4ab3367b8307d99b9dd81567016f5e73519d6a2ddbaf08c63c12814f777074a`
 - **Contract**: ERC-20 Token (from `examples/token.ql`)
 - **Target**: ink! v5.0.0 (Substrate/Polkadot)
-- **Artifacts**:
-  - Contract Bundle: 50KB
-  - WASM Bytecode: 22KB
-  - Metadata: 19KB
-- **Deployment**: Ready for local testnet, Rococo Contracts, or Astar Network
+- **Network**: Local Substrate Contracts Node
+- **Initial Supply**: 1,000,000 tokens
+- **Optimized Size**: 9.8KB WASM bytecode (71% reduction from 34.4KB)
+- **Deployment Status**: ✅ Successfully instantiated with Transfer event emitted
 
 **🎊 Achievement Unlocked: Write-Once, Deploy-Everywhere!**
 

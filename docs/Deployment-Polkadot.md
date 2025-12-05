@@ -2,14 +2,23 @@
 
 This guide demonstrates how to compile and deploy Quorlin smart contracts to Polkadot-compatible chains using ink! v5.
 
-## 🎉 Achievement
+## 🎉 Achievement: DEPLOYED AND LIVE!
 
 **We've successfully achieved write-once, deploy-everywhere** across all three major blockchain platforms:
-- ✅ **EVM** (Ethereum, Polygon, BSC, etc.)
-- ✅ **Solana** (Deployed to DevNet)
-- ✅ **Polkadot** (ink! v5 / Substrate)
+- ✅ **EVM** (Ethereum, Polygon, BSC, etc.) - **DEPLOYED** (Local Hardhat + Testnets)
+- ✅ **Solana** (Deployed to DevNet) - Program ID: `m3BqeaAW3JKJK32PnTV9PKjHA3XHpinfaWopwvdXmJz`
+- ✅ **Polkadot** (ink! v5 / Substrate) - **DEPLOYED TO LOCAL NODE**
 
-The same `token.ql` contract compiles to all three targets!
+### Live Deployment Details
+
+**Contract Address**: `5Cmg5TKsLBoeTbU4MkSJekwG6LQ5nt2My98p411sQvJb2eYs`
+**Code Hash**: `0xc4ab3367b8307d99b9dd81567016f5e73519d6a2ddbaf08c63c12814f777074a`
+**Network**: Local Substrate Contracts Node
+**Initial Supply**: 1,000,000 tokens
+**Deployment Date**: December 5, 2025
+**Status**: ✅ Successfully instantiated with Transfer event emitted
+
+The same `token.ql` contract now runs on all three blockchain ecosystems!
 
 ## Table of Contents
 
@@ -313,12 +322,92 @@ cargo contract build --release
 **Generated Contract:**
 - Source: `examples/token.ql`
 - Target: ink! v5.0.0
-- WASM Size: ~22KB
-- Metadata Size: ~19KB
+- WASM Size: 9.8KB (optimized, 71% reduction from 34.4KB)
+- Contract Bundle: 28KB
+- Metadata Size: 20KB
 - Storage: 6 fields (symbol, name, decimals, total_supply, balances, allowances)
 - Functions: 6 (new, transfer, approve, transfer_from, balance_of, allowance, get_total_supply)
 - Events: 2 (Transfer, Approval)
 
+## Live Deployment Results
+
+### Performance Metrics
+
+**Build Performance:**
+```
+Original WASM: 34.4KB
+Optimized WASM: 9.8KB (71% reduction)
+Build Time: ~25 seconds
+Optimization Level: --release
+```
+
+**Deployment Costs:**
+```
+Gas Estimate: Weight(ref_time: 628007045, proof_size: 42842)
+Storage Deposit: 350.785 mUNIT
+Code Storage: 249.49 mUNIT
+Contract Storage: 100.61 mUNIT + 200.175 mUNIT
+Transaction Fee: 2.399795011 mUNIT
+```
+
+**Deployment Events:**
+1. ✅ `Balances::Withdraw` - Deployment fee charged
+2. ✅ `Contracts::CodeStored` - WASM bytecode uploaded to chain
+3. ✅ `System::NewAccount` - Contract account created
+4. ✅ `Balances::Endowed` - Contract account funded
+5. ✅ `Balances::Transfer` - Initial balance transferred
+6. ✅ `Contracts::ContractEmitted` - Transfer event with initial supply
+7. ✅ `Contracts::Instantiated` - Contract successfully instantiated
+8. ✅ `Contracts::StorageDepositTransferredAndHeld` - Storage deposits locked
+9. ✅ `TransactionPayment::TransactionFeePaid` - Transaction finalized
+
+### Code Generation Highlights
+
+**Key Technical Features:**
+- ✅ Nested mapping flattening: `Mapping<(AccountId, AccountId), u128>` for allowances
+- ✅ Type adaptation: `uint256` → `u128` for ink! v5 StorageLayout compatibility
+- ✅ No-std WASM environment: `use ink::prelude::string::String`
+- ✅ Checked arithmetic: All operations use `.checked_add()`, `.checked_sub()`, etc.
+- ✅ Zero address handling: `AccountId::from([0u8; 32])`
+- ✅ Consistent API: `Self::env().caller()` for msg.sender equivalent
+
 ---
 
 **🎉 Congratulations!** You've successfully deployed Quorlin contracts to Polkadot using ink!. Your contract is now running on a production-grade WASM runtime.
+
+## Real-World Deployment Example
+
+Here's the complete deployment we achieved:
+
+```bash
+# 1. Built contract with automation script
+$ ./ink-test/scripts/compile-and-deploy.sh --deploy
+
+# 2. Deployment output
+✓ Build successful
+  Contract Artifacts:
+    • Contract bundle: 28K
+    • WASM bytecode:   12K (9.8KB optimized)
+    • Metadata:        20K
+    • Location:        ink-test/target/ink/quorlin_token/
+
+# 3. Deployment successful
+  Node URL:       ws://127.0.0.1:9944
+  Account:        //Alice
+  Initial Supply: 1000000
+
+   Code hash 0xc4ab3367b8307d99b9dd81567016f5e73519d6a2ddbaf08c63c12814f777074a
+    Contract 5Cmg5TKsLBoeTbU4MkSJekwG6LQ5nt2My98p411sQvJb2eYs
+  ✓ Deployment successful!
+
+# 4. Verification
+$ cargo contract call \
+  --contract 5Cmg5TKsLBoeTbU4MkSJekwG6LQ5nt2My98p411sQvJb2eYs \
+  --message get_total_supply \
+  --suri //Alice \
+  --dry-run
+
+Result: 1000000 ✅
+```
+
+This demonstrates true **Write-Once, Deploy-Everywhere** capability with a single Quorlin source file deploying to EVM, Solana, and Polkadot ecosystems!

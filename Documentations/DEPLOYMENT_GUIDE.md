@@ -2,6 +2,22 @@
 
 This guide provides step-by-step instructions for compiling Quorlin contracts and deploying them to Ethereum, Solana, and Polkadot.
 
+## 🎉 Live Deployments
+
+Quorlin has successfully achieved **Write-Once, Deploy-Everywhere** with live deployments across all three major blockchain ecosystems:
+
+| Platform | Status | Network | Details |
+|----------|--------|---------|---------|
+| **EVM** | ✅ DEPLOYED | Local Hardhat + Testnets | First deployment (Dec 2024) |
+| **Solana** | ✅ DEPLOYED | DevNet | Program ID: `m3BqeaAW3JKJK32PnTV9PKjHA3XHpinfaWopwvdXmJz` |
+| **Polkadot** | ✅ DEPLOYED | Local Substrate Node | Contract: `5Cmg5TKsLBoeTbU4MkSJekwG6LQ5nt2My98p411sQvJb2eYs` |
+
+**See detailed deployment documentation:**
+- [EVM Deployment Guide](../docs/Deployment-EVM.md)
+- [Solana Deployment Guide](../docs/Deployment-Solana.md)
+- [Polkadot Deployment Guide](../docs/Deployment-Polkadot.md)
+- [Deployment Record](../DEPLOYMENT_RECORD.md) - Complete deployment history
+
 ---
 
 ## Part 1: Building the Quorlin Compiler
