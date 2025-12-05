@@ -19,14 +19,16 @@ This guide walks you through deploying Quorlin smart contracts to Solana DevNet 
 2. **Solana CLI** (1.17+)
    ```bash
    # Linux/Mac
-   sh -c "$(curl -sSfL https://release.solana.com/stable/install)"
+   sh -c "$(curl -sSfL https://release.anza.xyz/stable/install)"
 
    # Windows (PowerShell)
-   cmd /c "curl https://release.solana.com/stable/solana-install-init-x86_64-pc-windows-msvc.exe --output C:\solana-install-tmp\solana-install-init.exe --create-dirs"
+   cmd /c "curl https://release.anza.xyz/stable/solana-install-init-x86_64-pc-windows-msvc.exe --output C:\solana-install-tmp\solana-install-init.exe --create-dirs"
 
    # Verify
    solana --version
    ```
+
+   **Note:** Solana installation has moved to Anza (https://release.anza.xyz)
 
 3. **Anchor Framework** (0.29+)
    ```bash
@@ -532,6 +534,86 @@ Your deployment is successful when:
   🔗 Explorer:
      https://explorer.solana.com/address/Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS?cluster=devnet
 ```
+
+---
+
+## 🎉 Live Deployment Example
+
+### Successfully Deployed Quorlin Token Contract
+
+**Deployment Details:**
+- **Program ID**: `m3BqeaAW3JKJK32PnTV9PKjHA3XHpinfaWopwvdXmJz`
+- **Network**: Solana DevNet
+- **Deploy Signature**: `bBpD6fL7NnJtLbhP2qgLMJJLDXRY5RTU9fWaAK5HfXbc54roLEEcp4PAYKioDNKjrXfoHGUcKSgWACNodjFm4or`
+- **Source Contract**: `examples/token.ql`
+- **Deployed**: December 2024
+
+### View on Solana Explorer
+
+**Program:**
+```
+https://explorer.solana.com/address/m3BqeaAW3JKJK32PnTV9PKjHA3XHpinfaWopwvdXmJz?cluster=devnet
+```
+
+**Deploy Transaction:**
+```
+https://explorer.solana.com/tx/bBpD6fL7NnJtLbhP2qgLMJJLDXRY5RTU9fWaAK5HfXbc54roLEEcp4PAYKioDNKjrXfoHGUcKSgWACNodjFm4or?cluster=devnet
+```
+
+### Verify the Deployment
+
+```bash
+# Check program info
+solana program show m3BqeaAW3JKJK32PnTV9PKjHA3XHpinfaWopwvdXmJz --url devnet
+
+# View program account
+solana account m3BqeaAW3JKJK32PnTV9PKjHA3XHpinfaWopwvdXmJz --url devnet
+```
+
+### Interact with the Deployed Token
+
+**View Program IDL:**
+```bash
+cd anchor-test
+cat target/idl/quorlin_token.json
+```
+
+**Initialize the Token:**
+```typescript
+import * as anchor from "@coral-xyz/anchor";
+
+// Connect to devnet
+const connection = new anchor.web3.Connection(
+  "https://api.devnet.solana.com",
+  "confirmed"
+);
+
+// Load the deployed program
+const programId = new anchor.web3.PublicKey("m3BqeaAW3JKJK32PnTV9PKjHA3XHpinfaWopwvdXmJz");
+
+// Initialize with 1,000,000 tokens
+const initialSupply = new anchor.BN(1_000_000);
+```
+
+**Query Program State:**
+```bash
+# Using Solana CLI
+solana account m3BqeaAW3JKJK32PnTV9PKjHA3XHpinfaWopwvdXmJz --url devnet --output json
+
+# View all program-owned accounts
+solana program show m3BqeaAW3JKJK32PnTV9PKjHA3XHpinfaWopwvdXmJz --url devnet --programs
+```
+
+### Program Features
+
+The deployed token contract supports:
+- ✅ `initialize` - Create token with initial supply
+- ✅ `transfer` - Transfer tokens between accounts
+- ✅ `approve` - Approve spending allowance
+- ✅ `transfer_from` - Transfer on behalf of another account
+- ✅ `balance_of` - Query account balance
+- ✅ `allowance` - Query spending allowance
+- ✅ `get_total_supply` - Get total token supply
 
 ---
 
