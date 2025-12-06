@@ -20,11 +20,11 @@ Today's blockchain developers face an impossible choice: write in Solidity for E
 
 Quorlin solves this with:
 
-- ** Python-like syntax** — If you know Python, you already know 90% of Quorlin
-- ** Multi-chain compilation** — One `.ql` file → EVM bytecode, Solana BPF, ink! Wasm
-- ** Security-first** — Built-in reentrancy guards, overflow protection, and static analysis
-- ** Zero overhead** — Compiles to native bytecode for each chain, no runtime interpreter
-- ** Production-ready** — 100% of example contracts compile successfully to Yul bytecode
+- **Python-like syntax** — If you know Python, you already know 90% of Quorlin
+- **Multi-chain compilation** — One `.ql` file → EVM bytecode, Solana BPF, ink! Wasm
+- **Security-first** — Built-in reentrancy guards, overflow protection, and static analysis
+- **Zero overhead** — Compiles to native bytecode for each chain, no runtime interpreter
+- **Production-ready** — 100% of example contracts compile successfully to Yul bytecode
 
 ##  Quick Example
 
