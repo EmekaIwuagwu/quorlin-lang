@@ -4,7 +4,7 @@
 
 **Write Once, Deploy Everywhere**
 
-A next-generation smart contract language that compiles to EVM, Solana, and Polkadot from a single, Python-like codebase.
+A next-generation smart contract language that compiles to EVM, Solana, and Polkadot from a single, Python-inspired codebase.
 
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/License-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE)
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)]()
