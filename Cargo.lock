@@ -618,6 +618,7 @@ dependencies = [
  "clap",
  "colored",
  "miette",
+ "quorlin-codegen-aptos",
  "quorlin-codegen-evm",
  "quorlin-codegen-ink",
  "quorlin-codegen-solana",
@@ -627,6 +628,25 @@ dependencies = [
  "quorlin-semantics",
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "quorlin-analyzer"
+version = "0.1.0"
+dependencies = [
+ "colored",
+ "quorlin-common",
+ "quorlin-parser",
+ "thiserror",
+]
+
+[[package]]
+name = "quorlin-codegen-aptos"
+version = "0.1.0"
+dependencies = [
+ "quorlin-common",
+ "quorlin-parser",
+ "thiserror",
 ]
 
 [[package]]
@@ -699,6 +719,15 @@ dependencies = [
  "quorlin-common",
  "quorlin-lexer",
  "serde",
+ "thiserror",
+]
+
+[[package]]
+name = "quorlin-resolver"
+version = "0.1.0"
+dependencies = [
+ "quorlin-common",
+ "quorlin-parser",
  "thiserror",
 ]
 

@@ -2,6 +2,7 @@ use colored::Colorize;
 use quorlin_codegen_evm::EvmCodegen;
 use quorlin_codegen_solana::SolanaCodegen;
 use quorlin_codegen_ink::InkCodegen;
+use quorlin_codegen_aptos::AptosCodegen;
 use quorlin_lexer::Lexer;
 use quorlin_parser::parse_module;
 use quorlin_semantics::SemanticAnalyzer;
@@ -135,6 +136,11 @@ pub fn run(
             let mut codegen = InkCodegen::new();
             let code = codegen.generate(&module).map_err(|e| format!("Codegen error: {}", e))?;
             (code, "rs")
+        }
+        "aptos" | "move" => {
+            let codegen = AptosCodegen::default();
+            let code = codegen.generate(&module).map_err(|e| format!("Codegen error: {}", e))?;
+            (code, "move")
         }
         _ => {
             return Err(format!("Unknown target: {}", target).into());

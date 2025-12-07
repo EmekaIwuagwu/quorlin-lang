@@ -188,19 +188,6 @@ pub enum TokenType {
     })]
     StringLiteralSingle(String),
 
-    // Docstrings (triple-quoted strings)
-    // Note: Using a simple pattern - more complex multiline docstrings
-    // will be handled in a preprocessing step if needed
-    #[regex(r#""""([^"]|"[^"]|""[^"])*""""#, |lex| {
-        let s = lex.slice();
-        s[3..s.len()-3].to_string()
-    })]
-    #[regex(r#"'''([^']|'[^']|''[^'])*'''"#, |lex| {
-        let s = lex.slice();
-        s[3..s.len()-3].to_string()
-    })]
-    DocString(String),
-
     // ═══════════════════════════════════════════════════════════
     // OPERATORS & PUNCTUATION (Python-compatible)
     // ═══════════════════════════════════════════════════════════

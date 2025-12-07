@@ -144,16 +144,6 @@ impl Parser {
     fn parse_contract_member(&mut self) -> Result<ContractMember, ParseError> {
         self.skip_newlines();
 
-        // Skip docstrings at the module/contract level
-        while let Some(token) = self.peek() {
-            if let TokenType::DocString(_) = token.token_type {
-                self.advance(); // Skip docstring
-                self.skip_newlines();
-            } else {
-                break;
-            }
-        }
-
         // Check for decorator
         let has_decorator = self.check(&TokenType::At);
         let mut decorators = Vec::new();
@@ -244,16 +234,6 @@ impl Parser {
 
     fn parse_stmt(&mut self) -> Result<Stmt, ParseError> {
         self.skip_newlines();
-
-        // Skip docstrings at statement level
-        while let Some(token) = self.peek() {
-            if let TokenType::DocString(_) = token.token_type {
-                self.advance(); // Skip docstring
-                self.skip_newlines();
-            } else {
-                break;
-            }
-        }
 
         if self.match_token(&TokenType::Let) {
             // let x: type = value (local variable declaration)

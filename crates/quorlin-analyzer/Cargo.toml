@@ -1,0 +1,10 @@
+[package]
+name = "quorlin-analyzer"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+quorlin-parser = { path = "../quorlin-parser" }
+quorlin-common = { path = "../quorlin-common" }
+thiserror = { workspace = true }
+colored = { workspace = true }

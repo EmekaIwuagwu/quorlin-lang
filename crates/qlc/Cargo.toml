@@ -17,6 +17,7 @@ quorlin-semantics = { path = "../quorlin-semantics" }
 quorlin-codegen-evm = { path = "../quorlin-codegen-evm" }
 quorlin-codegen-solana = { path = "../quorlin-codegen-solana" }
 quorlin-codegen-ink = { path = "../quorlin-codegen-ink" }
+quorlin-codegen-aptos = { path = "../quorlin-codegen-aptos" }
 quorlin-common = { path = "../quorlin-common" }
 clap = { workspace = true }
 colored = { workspace = true }
