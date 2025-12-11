@@ -211,6 +211,13 @@ pub enum Expr {
 
     /// Tuple literal: `(1, 2, 3)`
     Tuple(Vec<Expr>),
+
+    /// Ternary expression: `x if c else y`
+    IfExp {
+        test: Box<Expr>,
+        body: Box<Expr>,
+        orelse: Box<Expr>,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

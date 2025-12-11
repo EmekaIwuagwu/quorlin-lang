@@ -8,6 +8,7 @@
 //! We use a hand-written parser instead of LALRPOP because Python-style
 //! indentation creates ambiguities that LR parser generators can't handle well.
 
+// Quorlin Parser Library
 pub mod ast;
 pub mod parser;
 

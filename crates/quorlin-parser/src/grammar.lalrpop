@@ -268,6 +268,9 @@ Type: Type = {
     <t:SimpleType> "[" <size:int_literal> "]" => {
         Type::FixedArray(Box::new(Type::Simple(t)), size.parse().unwrap())
     },
+    "(" <ts:Sep<Type, ",">> ")" => {
+        if ts.len() == 1 { ts.into_iter().next().unwrap() } else { Type::Tuple(ts) }
+    },
 };
 
 SimpleType: String = {
@@ -307,6 +310,11 @@ SimpleStmt: Stmt = {
 AssignStmt: AssignStmt = {
     <target:ident> <type_annotation:(":" <Type>)?> "=" <value:Expr> => {
         AssignStmt { target, type_annotation, value }
+    },
+    // Support tuple unpacking: (a, b) = func()
+    "(" <targets:Sep<ident, ",">> ")" "=" <value:Expr> => {
+        let exprs = targets.into_iter().map(Expr::Ident).collect();
+        AssignStmt { target: Expr::Tuple(exprs), type_annotation: None, value }
     }
 };
 
@@ -385,7 +393,16 @@ WhileStmt: WhileStmt = {
 // EXPRESSIONS
 // ═══════════════════════════════════════════════════════════════════════
 
-Expr: Expr = OrExpr;
+Expr: Expr = {
+    <body:OrExpr> "if" <test:OrExpr> "else" <orelse:Expr> => {
+        Expr::IfExp {
+            test: Box::new(test),
+            body: Box::new(body),
+            orelse: Box::new(orelse),
+        }
+    },
+    OrExpr,
+};
 
 OrExpr: Expr = {
     <left:OrExpr> "or" <right:AndExpr> => {
@@ -486,7 +503,9 @@ Atom: Expr = {
     "None" => Expr::NoneLiteral,
     ident => Expr::Ident(<>),
     "self" => Expr::Ident("self".to_string()),
-    "(" <Expr> ")" => <>,
+    "(" <es:Sep<Expr, ",">> ")" => {
+        if es.len() == 1 { es.into_iter().next().unwrap() } else { Expr::Tuple(es) }
+    },
     "[" <Sep<Expr, ",">> "]" => Expr::List(<>),
 };
 
@@ -552,4 +571,4 @@ Sep<T, S>: Vec<T> = {
 };
 
 // Terminator: newline or EOF
-Terminator = newline*;
+Terminator = newline+;

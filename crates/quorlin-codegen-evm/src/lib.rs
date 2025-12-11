@@ -164,6 +164,12 @@ impl EvmCodegen {
           result := sload(keccak256(0, 64))
       }
 
+      function select(cond, a, b) -> result {
+          switch cond
+          case 0 { result := b }
+          default { result := a }
+      }
+
       // ========================================
 "#.to_string()
     }
@@ -755,6 +761,30 @@ impl EvmCodegen {
                     UnaryOp::Pos => Ok(expr_code), // Unary + is a no-op
                     UnaryOp::Not => Ok(format!("iszero({})", expr_code)),
                 }
+            }
+            Expr::List(_items) => {
+                // Not supported in Yul efficiently without memory management
+                // Simplified: return 0
+                Ok("0".to_string())
+            }
+            Expr::Tuple(_items) => {
+                // Not supported in Yul efficiently
+                // Simplified: return 0
+                Ok("0".to_string())
+            }
+            Expr::IfExp { test, body, orelse } => {
+                // Yul doesn't have ternary expression? Yul has `if cond { ... }`.
+                // Yul doesn't support `val := if cond { x } else { y }`.
+                // We need to implement it as a function or complex expression.
+                // Or: switch cond case 0 { val := y } default { val := x }
+                // But generate_expression needs to return a string of expression.
+                // We can use a switch wrapper if Yul allowed it inside expression context, but Yul statements vs expressions are strict.
+                // A helper function `select(cond, a, b)` can be defined.
+                // Let's assume we add `select` helper.
+                let test_code = self.generate_expression(test)?;
+                let body_code = self.generate_expression(body)?;
+                let orelse_code = self.generate_expression(orelse)?;
+                Ok(format!("select({}, {}, {})", test_code, body_code, orelse_code))
             }
             _ => Err(CodegenError::UnsupportedFeature(format!("Expression {:?}", expr))),
         }

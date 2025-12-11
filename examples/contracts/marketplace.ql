@@ -3,7 +3,82 @@
 
 from std.math import safe_add, safe_sub, safe_mul, safe_div
 from std.time import block_timestamp, add_days
-from std.log import require, require_not_zero_address, emit_event
+from std.log import require_not_zero_address
+
+# Structs
+struct Listing:
+    listing_id: uint256
+    seller: address
+    nft_contract: address
+    token_id: uint256
+    price: uint256
+    active: bool
+    created_at: uint64
+
+struct Auction:
+    auction_id: uint256
+    seller: address
+    nft_contract: address
+    token_id: uint256
+    start_price: uint256
+    reserve_price: uint256
+    current_bid: uint256
+    highest_bidder: address
+    start_time: uint64
+    end_time: uint64
+    ended: bool
+    auction_type: AuctionType
+
+struct Offer:
+    offer_id: uint256
+    offerer: address
+    nft_contract: address
+    token_id: uint256
+    price: uint256
+    expiration: uint64
+    accepted: bool
+    canceled: bool
+
+enum AuctionType:
+    English  # Ascending price
+    Dutch    # Descending price
+
+# Events
+event Listed(
+    listing_id: uint256,
+    seller: address,
+    nft_contract: address,
+    token_id: uint256,
+    price: uint256
+)
+event ListingCanceled(listing_id: uint256)
+event Sold(
+    listing_id: uint256,
+    buyer: address,
+    nft_contract: address,
+    token_id: uint256,
+    price: uint256
+)
+event AuctionCreated(
+    auction_id: uint256,
+    seller: address,
+    nft_contract: address,
+    token_id: uint256,
+    start_price: uint256,
+    end_time: uint64
+)
+event BidPlaced(auction_id: uint256, bidder: address, amount: uint256)
+event AuctionEnded(auction_id: uint256, winner: address, amount: uint256)
+event OfferMade(
+    offer_id: uint256,
+    offerer: address,
+    nft_contract: address,
+    token_id: uint256,
+    price: uint256
+)
+event OfferAccepted(offer_id: uint256)
+event OfferCanceled(offer_id: uint256)
+event PlatformFeeUpdated(old_fee: uint256, new_fee: uint256)
 
 contract NFTMarketplace:
     """
@@ -39,81 +114,6 @@ contract NFTMarketplace:
     _offer_count: uint256
     _offers: mapping[uint256, Offer]
     _nft_offers: mapping[address, mapping[uint256, list[uint256]]]  # NFT -> offer IDs
-    
-    # Structs
-    struct Listing:
-        listing_id: uint256
-        seller: address
-        nft_contract: address
-        token_id: uint256
-        price: uint256
-        active: bool
-        created_at: uint64
-    
-    struct Auction:
-        auction_id: uint256
-        seller: address
-        nft_contract: address
-        token_id: uint256
-        start_price: uint256
-        reserve_price: uint256
-        current_bid: uint256
-        highest_bidder: address
-        start_time: uint64
-        end_time: uint64
-        ended: bool
-        auction_type: AuctionType
-    
-    struct Offer:
-        offer_id: uint256
-        offerer: address
-        nft_contract: address
-        token_id: uint256
-        price: uint256
-        expiration: uint64
-        accepted: bool
-        canceled: bool
-    
-    enum AuctionType:
-        English  # Ascending price
-        Dutch    # Descending price
-    
-    # Events
-    event Listed(
-        listing_id: uint256,
-        seller: address,
-        nft_contract: address,
-        token_id: uint256,
-        price: uint256
-    )
-    event ListingCanceled(listing_id: uint256)
-    event Sold(
-        listing_id: uint256,
-        buyer: address,
-        nft_contract: address,
-        token_id: uint256,
-        price: uint256
-    )
-    event AuctionCreated(
-        auction_id: uint256,
-        seller: address,
-        nft_contract: address,
-        token_id: uint256,
-        start_price: uint256,
-        end_time: uint64
-    )
-    event BidPlaced(auction_id: uint256, bidder: address, amount: uint256)
-    event AuctionEnded(auction_id: uint256, winner: address, amount: uint256)
-    event OfferMade(
-        offer_id: uint256,
-        offerer: address,
-        nft_contract: address,
-        token_id: uint256,
-        price: uint256
-    )
-    event OfferAccepted(offer_id: uint256)
-    event OfferCanceled(offer_id: uint256)
-    event PlatformFeeUpdated(old_fee: uint256, new_fee: uint256)
     
     @constructor
     fn __init__(platform_fee: uint256):

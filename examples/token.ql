@@ -21,7 +21,7 @@ contract Token:
     name: str = "Quorlin Token"
     symbol: str = "QRL"
     decimals: uint8 = 18
-    total_supply: uint256
+    total_supply: uint256 = 0
 
     balances: mapping[address, uint256]
     allowances: mapping[address, mapping[address, uint256]]
@@ -72,7 +72,7 @@ contract Token:
 
         self.balances[from_addr] = safe_sub(self.balances[from_addr], amount)
         self.balances[to] = safe_add(self.balances[to], amount)
-        self.allowances[from_addr][msg.sender] -= amount
+        self.allowances[from_addr][msg.sender] = safe_sub(self.allowances[from_addr][msg.sender], amount)
 
         emit Transfer(from_addr, to, amount)
         return True

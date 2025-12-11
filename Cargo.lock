@@ -621,6 +621,7 @@ dependencies = [
  "quorlin-codegen-aptos",
  "quorlin-codegen-evm",
  "quorlin-codegen-ink",
+ "quorlin-codegen-quorlin",
  "quorlin-codegen-solana",
  "quorlin-common",
  "quorlin-lexer",
@@ -669,6 +670,14 @@ dependencies = [
  "quorlin-ir",
  "quorlin-parser",
  "thiserror",
+]
+
+[[package]]
+name = "quorlin-codegen-quorlin"
+version = "0.1.0"
+dependencies = [
+ "quorlin-common",
+ "quorlin-parser",
 ]
 
 [[package]]

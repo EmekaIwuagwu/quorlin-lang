@@ -262,6 +262,12 @@ impl TypeChecker {
             Expr::List(_) => Type::Simple("list".to_string()),
             
             Expr::Tuple(_) => Type::Simple("tuple".to_string()),
+            
+            Expr::IfExp { test: _, body, orelse: _ } => {
+                // Type of ternary expression is the type of its body
+                // In a more sophisticated type system, we'd check that body and orelse have compatible types
+                self.infer_type(body)
+            }
         }
     }
     

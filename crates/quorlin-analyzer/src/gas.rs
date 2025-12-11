@@ -158,7 +158,6 @@ impl GasEstimator {
                     BinOp::Pow => 10,
                     BinOp::Eq | BinOp::NotEq | BinOp::Lt | BinOp::LtEq | BinOp::Gt | BinOp::GtEq => 3,
                     BinOp::And | BinOp::Or => 3,
-                    _ => 10,
                 };
                 left_gas + right_gas + op_gas
             }
@@ -209,6 +208,14 @@ impl GasEstimator {
                     .map(|item| self.estimate_expression(item))
                     .sum();
                 items_gas + (items.len() as u64 * 50)
+            }
+            
+            Expr::IfExp { test, body, orelse } => {
+                // Estimate condition plus max of both branches
+                let test_gas = self.estimate_expression(test);
+                let body_gas = self.estimate_expression(body);
+                let orelse_gas = self.estimate_expression(orelse);
+                test_gas + body_gas.max(orelse_gas) + 50 // Add overhead for conditional logic
             }
         }
     }

@@ -3,7 +3,36 @@
 
 from std.math import safe_add, safe_sub, safe_mul, safe_div
 from std.time import block_timestamp, add_days
-from std.log import require, require_not_zero_address, emit_event
+from std.log import require_not_zero_address
+
+# Structs
+struct Stake:
+    amount: uint256
+    start_time: uint64
+    last_claim_time: uint64
+    accumulated_rewards: uint256
+
+struct StakingPool:
+    name: str
+    reward_rate: uint256
+    lock_period: uint64
+    total_staked: uint256
+    active: bool
+
+struct PoolStake:
+    amount: uint256
+    start_time: uint64
+    last_claim_time: uint64
+    rewards: uint256
+
+# Events
+event Staked(user: address, amount: uint256, timestamp: uint64)
+event Unstaked(user: address, amount: uint256, reward: uint256, penalty: uint256)
+event RewardClaimed(user: address, amount: uint256)
+event RewardRateUpdated(old_rate: uint256, new_rate: uint256)
+event PoolCreated(pool_id: uint256, name: str, reward_rate: uint256)
+event PoolStaked(user: address, pool_id: uint256, amount: uint256)
+event EmergencyWithdrawal(user: address, amount: uint256)
 
 contract TokenStaking:
     """
@@ -47,35 +76,6 @@ contract TokenStaking:
     _pool_count: uint256
     _pools: mapping[uint256, StakingPool]
     _user_pool_stakes: mapping[address, mapping[uint256, PoolStake]]
-    
-    # Structs
-    struct Stake:
-        amount: uint256
-        start_time: uint64
-        last_claim_time: uint64
-        accumulated_rewards: uint256
-    
-    struct StakingPool:
-        name: str
-        reward_rate: uint256
-        lock_period: uint64
-        total_staked: uint256
-        active: bool
-    
-    struct PoolStake:
-        amount: uint256
-        start_time: uint64
-        last_claim_time: uint64
-        rewards: uint256
-    
-    # Events
-    event Staked(user: address, amount: uint256, timestamp: uint64)
-    event Unstaked(user: address, amount: uint256, reward: uint256, penalty: uint256)
-    event RewardClaimed(user: address, amount: uint256)
-    event RewardRateUpdated(old_rate: uint256, new_rate: uint256)
-    event PoolCreated(pool_id: uint256, name: str, reward_rate: uint256)
-    event PoolStaked(user: address, pool_id: uint256, amount: uint256)
-    event EmergencyWithdrawal(user: address, amount: uint256)
     
     @constructor
     fn __init__(

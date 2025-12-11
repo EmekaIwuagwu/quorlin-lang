@@ -1,0 +1,129 @@
+# Quorlin Bytecode
+# Magic: QBC\0
+# Version: 1.0.0
+
+# Event: Transfer
+#   from_address : Simple("address")
+#   to : Simple("address")
+#   amount : Simple("uint256")
+
+# Event: Approval
+#   owner : Simple("address")
+#   spender : Simple("address")
+#   amount : Simple("uint256")
+
+# Event: Mint
+#   to : Simple("address")
+#   amount : Simple("uint256")
+
+# Contract: SimpleToken
+
+# State: _name : Simple("str")
+# State: _symbol : Simple("str")
+# State: _decimals : Simple("uint256")
+# State: _total_supply : Simple("uint256")
+# State: _owner : Simple("address")
+# State: _balances : Mapping(Simple("address"), Simple("uint256"))
+# State: _allowances : Mapping(Simple("address"), Mapping(Simple("address"), Simple("uint256")))
+
+# Function: __init__
+#   Params: 4
+#   Return: None
+FUNC_START
+  ASSIGN Attribute(Ident("self"), "_name")
+  ASSIGN Attribute(Ident("self"), "_symbol")
+  ASSIGN Attribute(Ident("self"), "_decimals")
+  ASSIGN Attribute(Ident("self"), "_owner")
+  ASSIGN Attribute(Ident("self"), "_total_supply")
+  ASSIGN Index(Attribute(Ident("self"), "_balances"), Attribute(Ident("msg"), "sender"))
+  EMIT Mint
+  EMIT Transfer
+FUNC_END
+
+# Function: name
+#   Params: 0
+#   Return: Some(Simple("str"))
+FUNC_START
+  RETURN
+FUNC_END
+
+# Function: symbol
+#   Params: 0
+#   Return: Some(Simple("str"))
+FUNC_START
+  RETURN
+FUNC_END
+
+# Function: decimals
+#   Params: 0
+#   Return: Some(Simple("uint256"))
+FUNC_START
+  RETURN
+FUNC_END
+
+# Function: total_supply
+#   Params: 0
+#   Return: Some(Simple("uint256"))
+FUNC_START
+  RETURN
+FUNC_END
+
+# Function: balance_of
+#   Params: 1
+#   Return: Some(Simple("uint256"))
+FUNC_START
+  RETURN
+FUNC_END
+
+# Function: allowance
+#   Params: 2
+#   Return: Some(Simple("uint256"))
+FUNC_START
+  RETURN
+FUNC_END
+
+# Function: transfer
+#   Params: 2
+#   Return: None
+FUNC_START
+  REQUIRE Some("Cannot send to zero address")
+  REQUIRE Some("Insufficient balance")
+  ASSIGN Index(Attribute(Ident("self"), "_balances"), Attribute(Ident("msg"), "sender"))
+  ASSIGN Index(Attribute(Ident("self"), "_balances"), Ident("to"))
+  EMIT Transfer
+FUNC_END
+
+# Function: approve
+#   Params: 2
+#   Return: None
+FUNC_START
+  REQUIRE Some("Cannot approve zero address")
+  ASSIGN Index(Index(Attribute(Ident("self"), "_allowances"), Attribute(Ident("msg"), "sender")), Ident("spender"))
+  EMIT Approval
+FUNC_END
+
+# Function: transfer_from
+#   Params: 3
+#   Return: None
+FUNC_START
+  REQUIRE Some("Cannot send to zero address")
+  REQUIRE Some("Insufficient balance")
+  REQUIRE Some("Insufficient allowance")
+  ASSIGN Index(Attribute(Ident("self"), "_balances"), Ident("from_address"))
+  ASSIGN Index(Attribute(Ident("self"), "_balances"), Ident("to"))
+  ASSIGN Index(Index(Attribute(Ident("self"), "_allowances"), Ident("from_address")), Attribute(Ident("msg"), "sender"))
+  EMIT Transfer
+FUNC_END
+
+# Function: mint
+#   Params: 2
+#   Return: None
+FUNC_START
+  REQUIRE Some("Insufficient allowance")
+  REQUIRE Some("Cannot send to zero address")
+  ASSIGN Attribute(Ident("self"), "_total_supply")
+  ASSIGN Index(Attribute(Ident("self"), "_balances"), Ident("to"))
+  EMIT Mint
+  EMIT Transfer
+FUNC_END
+

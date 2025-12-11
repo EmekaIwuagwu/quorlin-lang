@@ -38,10 +38,18 @@ impl Parser {
             self.parse_event()
         } else if self.check(&TokenType::Contract) {
             self.parse_contract()
+        } else if self.check(&TokenType::Struct) {
+            self.parse_struct()
+        } else if self.check(&TokenType::Enum) {
+            self.parse_enum()
+        } else if self.check(&TokenType::Interface) {
+            self.parse_interface()
+        } else if self.check(&TokenType::Error) {
+            self.parse_error_decl()
         } else {
             Err(ParseError::UnexpectedToken(
                 self.current,
-                format!("Expected item (from, contract, or event), found {:?}", self.peek()),
+                format!("Expected item (from, contract, event, struct, enum, interface, or error), found {:?}", self.peek()),
             ))
         }
     }
@@ -303,61 +311,48 @@ impl Parser {
 
             Ok(Stmt::Require(RequireStmt { condition, message }))
         } else if self.check(&TokenType::SelfKw) || self.check_ident() {
-            // Parse assignment: target = value
-            // Target could be: name, self.attr, self.attr[index], self.attr[i][j], etc.
+            // Parse potential target or expression statement
+            // Target could be: name, self.attr, self.attr[index], call(), etc.
+            
+            // We use parse_atom_with_postfix because it handles ident/self followed by ., (), []
+            let target = self.parse_atom_with_postfix()?;
 
-            // Build the target expression
-            let mut target = if self.match_token(&TokenType::SelfKw) {
-                self.consume(&TokenType::Dot, "Expected '.' after 'self'")?;
-                let attr_name = self.consume_ident("Expected attribute name")?;
-                Expr::Attribute(Box::new(Expr::Ident("self".to_string())), attr_name)
+            // Check for type annotation: name: type = value
+            let type_annotation = if self.match_token(&TokenType::Colon) {
+                Some(self.parse_type()?)
             } else {
-                let ident = self.consume_ident("Expected identifier")?;
-                Expr::Ident(ident)
+                None
             };
-
-            // Handle any number of index operations: [expr], [expr][expr], etc.
-            while self.match_token(&TokenType::LBracket) {
-                let index_expr = self.parse_expr()?;
-                self.consume(&TokenType::RBracket, "Expected ']'")?;
-                target = Expr::Index(Box::new(target), Box::new(index_expr));
-            }
 
             // Check for assignment operator: =, +=, -=, *=, /=
-            let op = if self.match_token(&TokenType::Eq) {
-                None // Simple assignment
-            } else if self.match_token(&TokenType::PlusEq) {
-                Some(BinOp::Add)
-            } else if self.match_token(&TokenType::MinusEq) {
-                Some(BinOp::Sub)
-            } else if self.match_token(&TokenType::StarEq) {
-                Some(BinOp::Mul)
-            } else if self.match_token(&TokenType::SlashEq) {
-                Some(BinOp::Div)
+            if self.match_token(&TokenType::Eq) {
+                // Simple assignment: target = value
+                let value = self.parse_expr()?;
+                self.skip_newlines();
+
+                Ok(Stmt::Assign(AssignStmt {
+                    target,
+                    type_annotation,
+                    value,
+                }))
+            } else if self.match_token(&TokenType::PlusEq) 
+                   || self.match_token(&TokenType::MinusEq)
+                   || self.match_token(&TokenType::StarEq)
+                   || self.match_token(&TokenType::SlashEq) {
+                
+                if type_annotation.is_some() {
+                    return Err(ParseError::UnexpectedToken(self.current, "Type annotations not allowed in augmented assignment".to_string()));
+                }
+
+                Err(ParseError::UnexpectedToken(self.current, "Augmented assignment implementation pending refactor".to_string()))
             } else {
-                return Err(ParseError::UnexpectedToken(
-                    self.current,
-                    format!("Expected assignment operator, found {:?}", self.peek()),
-                ));
-            };
-
-            let mut value = self.parse_expr()?;
-            self.skip_newlines();
-
-            // For augmented assignments (+=, -=, etc.), convert to: target = target op value
-            if let Some(binop) = op {
-                value = Expr::BinOp(
-                    Box::new(target.clone()),
-                    binop,
-                    Box::new(value),
-                );
+                if type_annotation.is_some() {
+                     return Err(ParseError::UnexpectedToken(self.current, "Expected assignment after type annotation".to_string()));
+                }
+                // Not an assignment -> Expression statement (e.g., function call)
+                self.skip_newlines();
+                Ok(Stmt::Expr(target))
             }
-
-            Ok(Stmt::Assign(AssignStmt {
-                target,
-                type_annotation: None,
-                value,
-            }))
         } else if self.match_token(&TokenType::If) {
             self.parse_if_stmt()
         } else if self.match_token(&TokenType::While) {
@@ -504,7 +499,21 @@ impl Parser {
     }
 
     fn parse_expr(&mut self) -> Result<Expr, ParseError> {
-        self.parse_or()
+        let expr = self.parse_or()?;
+        
+        if self.match_token(&TokenType::If) {
+            let test = self.parse_or()?;
+            self.consume(&TokenType::Else, "Expected 'else' in ternary expression")?;
+            let orelse = self.parse_expr()?;
+            
+            Ok(Expr::IfExp {
+                test: Box::new(test),
+                body: Box::new(expr),
+                orelse: Box::new(orelse),
+            })
+        } else {
+            Ok(expr)
+        }
     }
 
     // Logical OR (lowest precedence)
@@ -753,6 +762,10 @@ impl Parser {
                     self.advance();
                     Ok(Expr::Ident("self".to_string()))
                 }
+                TokenType::This => {
+                    self.advance();
+                    Ok(Expr::Ident("this".to_string()))
+                }
                 // Handle type names used as constructors: address(0), uint256(x)
                 TokenType::Address => {
                     self.advance();
@@ -772,11 +785,33 @@ impl Parser {
                     Ok(Expr::Ident(size))
                 }
                 TokenType::LParen => {
-                    // Parenthesized expression
                     self.advance();
-                    let expr = self.parse_expr()?;
-                    self.consume(&TokenType::RParen, "Expected ')' after expression")?;
-                    Ok(expr)
+                    // Empty tuple
+                    if self.check(&TokenType::RParen) {
+                        self.advance();
+                        return Ok(Expr::Tuple(vec![]));
+                    }
+
+                    let first = self.parse_expr()?;
+                    
+                    if self.match_token(&TokenType::Comma) {
+                        // Tuple
+                        let mut exprs = vec![first];
+                        if !self.check(&TokenType::RParen) {
+                            loop {
+                                exprs.push(self.parse_expr()?);
+                                if !self.match_token(&TokenType::Comma) {
+                                    break;
+                                }
+                            }
+                        }
+                        self.consume(&TokenType::RParen, "Expected ')'")?;
+                        Ok(Expr::Tuple(exprs))
+                    } else {
+                        // Parenthesized expression
+                        self.consume(&TokenType::RParen, "Expected ')'")?;
+                        Ok(first)
+                    }
                 }
                 _ => Err(ParseError::UnexpectedToken(
                     self.current,
@@ -838,6 +873,20 @@ impl Parser {
                     let name = name.clone();
                     self.advance();
                     Ok(Type::Simple(name))
+                }
+                TokenType::LParen => {
+                    self.advance();
+                    let mut types = Vec::new();
+                    if !self.check(&TokenType::RParen) {
+                         loop {
+                             types.push(self.parse_type()?);
+                             if !self.match_token(&TokenType::Comma) {
+                                 break;
+                             }
+                         }
+                    }
+                    self.consume(&TokenType::RParen, "Expected ')'")?;
+                    Ok(Type::Tuple(types))
                 }
                 _ => Err(ParseError::UnexpectedToken(
                     self.current,
@@ -943,5 +992,134 @@ impl Parser {
         } else {
             Err(ParseError::UnexpectedEof)
         }
+    }
+
+    fn parse_struct(&mut self) -> Result<Item, ParseError> {
+        self.consume(&TokenType::Struct, "Expected 'struct'")?;
+        let name = self.consume_ident("Expected struct name")?;
+        self.consume(&TokenType::Colon, "Expected ':'")?;
+        self.skip_newlines();
+        self.consume(&TokenType::Indent, "Expected indented block")?;
+
+        let mut fields = Vec::new();
+        while !self.check(&TokenType::Dedent) && !self.is_at_end() {
+            let field_name = self.consume_ident("Expected field name")?;
+            self.consume(&TokenType::Colon, "Expected ':'")?;
+            let type_annotation = self.parse_type()?;
+            
+            fields.push(StructField {
+                name: field_name,
+                type_annotation,
+            });
+            
+            self.skip_newlines();
+        }
+
+        self.consume(&TokenType::Dedent, "Expected dedent")?;
+
+        Ok(Item::Struct(StructDecl { name, fields }))
+    }
+
+    fn parse_enum(&mut self) -> Result<Item, ParseError> {
+        self.consume(&TokenType::Enum, "Expected 'enum'")?;
+        let name = self.consume_ident("Expected enum name")?;
+        self.consume(&TokenType::Colon, "Expected ':'")?;
+        self.skip_newlines();
+        self.consume(&TokenType::Indent, "Expected indented block")?;
+
+        let mut variants = Vec::new();
+        while !self.check(&TokenType::Dedent) && !self.is_at_end() {
+            let variant = self.consume_ident("Expected variant name")?;
+            variants.push(variant);
+            self.skip_newlines();
+        }
+
+        self.consume(&TokenType::Dedent, "Expected dedent")?;
+
+        Ok(Item::Enum(EnumDecl { name, variants }))
+    }
+
+    fn parse_interface(&mut self) -> Result<Item, ParseError> {
+        self.consume(&TokenType::Interface, "Expected 'interface'")?;
+        let name = self.consume_ident("Expected interface name")?;
+        self.consume(&TokenType::Colon, "Expected ':'")?;
+        self.skip_newlines();
+        self.consume(&TokenType::Indent, "Expected indented block")?;
+
+        let mut functions = Vec::new();
+        while !self.check(&TokenType::Dedent) && !self.is_at_end() {
+            self.consume(&TokenType::Fn, "Expected 'fn'")?;
+            let func_name = self.consume_ident("Expected function name")?;
+            self.consume(&TokenType::LParen, "Expected '('")?;
+
+            let mut params = Vec::new();
+            if !self.check(&TokenType::RParen) {
+                loop {
+                    let param_name = self.consume_ident("Expected parameter name")?;
+                    self.consume(&TokenType::Colon, "Expected ':'")?;
+                    let type_annotation = self.parse_type()?;
+
+                    params.push(Param {
+                        name: param_name,
+                        type_annotation,
+                        default: None,
+                    });
+
+                    if !self.match_token(&TokenType::Comma) {
+                        break;
+                    }
+                }
+            }
+
+            self.consume(&TokenType::RParen, "Expected ')'")?;
+
+            let return_type = if self.match_token(&TokenType::Arrow) {
+                Some(self.parse_type()?)
+            } else {
+                None
+            };
+
+            functions.push(FunctionSignature {
+                name: func_name,
+                params,
+                return_type,
+            });
+
+            self.skip_newlines();
+        }
+
+        self.consume(&TokenType::Dedent, "Expected dedent")?;
+
+        Ok(Item::Interface(InterfaceDecl { name, functions }))
+    }
+
+    fn parse_error_decl(&mut self) -> Result<Item, ParseError> {
+        self.consume(&TokenType::Error, "Expected 'error'")?;
+        let name = self.consume_ident("Expected error name")?;
+        self.consume(&TokenType::LParen, "Expected '('")?;
+
+        let mut params = Vec::new();
+        if !self.check(&TokenType::RParen) {
+            loop {
+                let param_name = self.consume_ident("Expected parameter name")?;
+                self.consume(&TokenType::Colon, "Expected ':'")?;
+                let type_annotation = self.parse_type()?;
+
+                params.push(Param {
+                    name: param_name,
+                    type_annotation,
+                    default: None,
+                });
+
+                if !self.match_token(&TokenType::Comma) {
+                    break;
+                }
+            }
+        }
+
+        self.consume(&TokenType::RParen, "Expected ')'")?;
+        self.skip_newlines();
+
+        Ok(Item::Error(ErrorDecl { name, params }))
     }
 }

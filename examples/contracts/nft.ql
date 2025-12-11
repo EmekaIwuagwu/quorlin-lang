@@ -2,7 +2,15 @@
 # ERC-721 compatible, compiles to all blockchain backends
 
 from std.math import safe_add, safe_sub
-from std.log import emit_event, require, require_not_zero_address
+from std.log import require_not_zero_address
+
+# Events
+event Transfer(from_addr: address, to: address, token_id: uint256)
+event Approval(owner: address, approved: address, token_id: uint256)
+event ApprovalForAll(owner: address, operator: address, approved: bool)
+event Minted(to: address, token_id: uint256, uri: str)
+event Burned(owner: address, token_id: uint256)
+event RoyaltySet(receiver: address, percentage: uint256)
 
 contract NFT:
     """
@@ -38,14 +46,6 @@ contract NFT:
     # Royalty info (EIP-2981 compatible)
     _royalty_receiver: address
     _royalty_percentage: uint256  # Basis points (e.g., 500 = 5%)
-    
-    # Events
-    event Transfer(from_addr: address, to: address, token_id: uint256)
-    event Approval(owner: address, approved: address, token_id: uint256)
-    event ApprovalForAll(owner: address, operator: address, approved: bool)
-    event Minted(to: address, token_id: uint256, uri: str)
-    event Burned(owner: address, token_id: uint256)
-    event RoyaltySet(receiver: address, percentage: uint256)
     
     @constructor
     fn __init__(name: str, symbol: str, royalty_percentage: uint256):

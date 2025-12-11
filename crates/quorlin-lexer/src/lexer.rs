@@ -40,6 +40,7 @@ impl<'source> Lexer<'source> {
         let mut lexer = TokenType::lexer(self.source);
         let mut line = 1;
         let mut line_start = 0;
+        let mut nesting_level = 0;
 
         while let Some(token_result) = lexer.next() {
             let span = lexer.span();
@@ -62,6 +63,25 @@ impl<'source> Lexer<'source> {
 
             match token_result {
                 Ok(token_type) => {
+                    // Update nesting level for Python-style implicit line continuation
+                    match token_type {
+                        TokenType::LParen | TokenType::LBracket | TokenType::LBrace => {
+                            nesting_level += 1;
+                        }
+                        TokenType::RParen | TokenType::RBracket | TokenType::RBrace => {
+                            if nesting_level > 0 {
+                                nesting_level -= 1;
+                            }
+                        }
+                        TokenType::Newline => {
+                            if nesting_level > 0 {
+                                // Skip newlines inside brackets/parentheses
+                                continue;
+                            }
+                        }
+                        _ => {}
+                    }
+
                     // Filter out certain tokens or process them
                     match &token_type {
                         TokenType::Ident(name) => {

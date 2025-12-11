@@ -612,6 +612,24 @@ impl SemanticAnalyzer {
                 }
                 Ok(Type::Tuple(types))
             }
+            Expr::IfExp { test, body, orelse } => {
+                let test_type = self.check_expression(test)?;
+                let bool_type = Type::Simple("bool".to_string());
+                if test_type != bool_type && test_type != Type::Simple("unknown".to_string()) {
+                    return Err(SemanticError::TypeMismatch {
+                        expected: "bool".to_string(),
+                        found: format!("{:?}", test_type),
+                    });
+                }
+                
+                let body_type = self.check_expression(body)?;
+                let orelse_type = self.check_expression(orelse)?;
+                
+                // For now, simple check that orelse is compatible with body
+                type_checker::check_type_compatibility(&body_type, &orelse_type)?;
+                
+                Ok(body_type)
+            }
         }
     }
 
@@ -646,6 +664,13 @@ impl SemanticAnalyzer {
                 } else {
                     Ok(Type::Simple("unknown".to_string()))
                 }
+            }
+            Expr::Tuple(elements) => {
+                let mut types = Vec::new();
+                for elem in elements {
+                    types.push(self.infer_target_type(elem)?);
+                }
+                Ok(Type::Tuple(types))
             }
             _ => Ok(Type::Simple("unknown".to_string())),
         }

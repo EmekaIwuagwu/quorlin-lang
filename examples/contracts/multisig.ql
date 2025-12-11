@@ -2,7 +2,26 @@
 # Requires M-of-N confirmations for executing transactions
 
 from std.math import safe_add, safe_sub
-from std.log import emit_event, require, require_not_zero_address
+from std.log import require_not_zero_address
+
+# Transaction struct
+struct Transaction:
+    to: address
+    value: uint256
+    data: bytes
+    executed: bool
+    num_confirmations: uint256
+
+# Events
+event OwnerAdded(owner: address)
+event OwnerRemoved(owner: address)
+event RequirementChanged(required_confirmations: uint256)
+event TransactionSubmitted(tx_id: uint256, sender: address, to: address, value: uint256, data: bytes)
+event TransactionConfirmed(tx_id: uint256, owner: address)
+event ConfirmationRevoked(tx_id: uint256, owner: address)
+event TransactionExecuted(tx_id: uint256)
+event TransactionFailed(tx_id: uint256)
+event Deposit(sender: address, amount: uint256, balance: uint256)
 
 contract MultiSigWallet:
     """
@@ -26,25 +45,6 @@ contract MultiSigWallet:
     _transactions: mapping[uint256, Transaction]
     _confirmations: mapping[uint256, mapping[address, bool]]
     _confirmation_count: mapping[uint256, uint256]
-    
-    # Transaction struct
-    struct Transaction:
-        to: address
-        value: uint256
-        data: bytes
-        executed: bool
-        num_confirmations: uint256
-    
-    # Events
-    event OwnerAdded(owner: address)
-    event OwnerRemoved(owner: address)
-    event RequirementChanged(required_confirmations: uint256)
-    event TransactionSubmitted(tx_id: uint256, sender: address, to: address, value: uint256, data: bytes)
-    event TransactionConfirmed(tx_id: uint256, owner: address)
-    event ConfirmationRevoked(tx_id: uint256, owner: address)
-    event TransactionExecuted(tx_id: uint256)
-    event TransactionFailed(tx_id: uint256)
-    event Deposit(sender: address, amount: uint256, balance: uint256)
     
     @constructor
     fn __init__(owners: list[address], required: uint256):

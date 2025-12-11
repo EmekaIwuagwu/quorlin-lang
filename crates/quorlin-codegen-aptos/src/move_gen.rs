@@ -400,6 +400,12 @@ impl MoveGenerator {
                     .collect();
                 Ok(format!("({})", items_str?.join(", ")))
             }
+            Expr::IfExp { test, body, orelse } => {
+                let test_str = self.generate_expr(test)?;
+                let body_str = self.generate_expr(body)?;
+                let orelse_str = self.generate_expr(orelse)?;
+                Ok(format!("if ({}) {} else {}", test_str, body_str, orelse_str))
+            }
         }
     }
     
@@ -483,6 +489,16 @@ impl MoveGenerator {
             Expr::Call(func, args) => {
                 self.expr_references_self(func) || args.iter().any(|a| self.expr_references_self(a))
             }
+            Expr::Index(obj, idx) => {
+                self.expr_references_self(obj) || self.expr_references_self(idx)
+            }
+            Expr::List(items) | Expr::Tuple(items) => {
+                items.iter().any(|i| self.expr_references_self(i))
+            }
+            Expr::IfExp { test, body, orelse } => {
+                self.expr_references_self(test) || self.expr_references_self(body) || self.expr_references_self(orelse)
+            }
+            Expr::UnaryOp(_, op) => self.expr_references_self(op),
             _ => false,
         }
     }

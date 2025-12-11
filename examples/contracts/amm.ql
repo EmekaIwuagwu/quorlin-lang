@@ -2,7 +2,14 @@
 # Uniswap V2 style DEX with x * y = k invariant
 
 from std.math import safe_add, safe_sub, safe_mul, safe_div, min
-from std.log import emit_event, require, require_not_zero_address
+from std.log import require_not_zero_address
+
+# Events
+event Mint(sender: address, amount0: uint256, amount1: uint256, liquidity: uint256)
+event Burn(sender: address, amount0: uint256, amount1: uint256, liquidity: uint256, to: address)
+event Swap(sender: address, amount0_in: uint256, amount1_in: uint256, amount0_out: uint256, amount1_out: uint256, to: address)
+event Sync(reserve0: uint256, reserve1: uint256)
+event FeeUpdated(fee_percent: uint256, protocol_fee_percent: uint256)
 
 contract SimpleAMM:
     """
@@ -44,20 +51,6 @@ contract SimpleAMM:
     
     # Minimum liquidity (locked forever)
     MINIMUM_LIQUIDITY: uint256 = 1000
-    
-    # Events
-    event Mint(sender: address, amount0: uint256, amount1: uint256, liquidity: uint256)
-    event Burn(sender: address, amount0: uint256, amount1: uint256, liquidity: uint256, to: address)
-    event Swap(
-        sender: address,
-        amount0_in: uint256,
-        amount1_in: uint256,
-        amount0_out: uint256,
-        amount1_out: uint256,
-        to: address
-    )
-    event Sync(reserve0: uint256, reserve1: uint256)
-    event FeeUpdated(fee_percent: uint256, protocol_fee_percent: uint256)
     
     @constructor
     fn __init__(token0: address, token1: address, fee_percent: uint256):
@@ -182,13 +175,7 @@ contract SimpleAMM:
     # ========== Liquidity Functions ==========
     
     @external
-    fn add_liquidity(
-        amount0_desired: uint256,
-        amount1_desired: uint256,
-        amount0_min: uint256,
-        amount1_min: uint256,
-        to: address
-    ) -> (uint256, uint256, uint256):
+    fn add_liquidity(amount0_desired: uint256, amount1_desired: uint256, amount0_min: uint256, amount1_min: uint256, to: address) -> (uint256, uint256, uint256):
         """
         Adds liquidity to the pool.
         
@@ -205,8 +192,8 @@ contract SimpleAMM:
         require_not_zero_address(to, "Invalid recipient")
         
         # Calculate optimal amounts
-        amount0: uint256
-        amount1: uint256
+        amount0: uint256 = 0
+        amount1: uint256 = 0
         
         if self._reserve0 == 0 and self._reserve1 == 0:
             # First liquidity provision
@@ -239,12 +226,7 @@ contract SimpleAMM:
         return (amount0, amount1, liquidity)
     
     @external
-    fn remove_liquidity(
-        liquidity: uint256,
-        amount0_min: uint256,
-        amount1_min: uint256,
-        to: address
-    ) -> (uint256, uint256):
+    fn remove_liquidity(liquidity: uint256, amount0_min: uint256, amount1_min: uint256, to: address) -> (uint256, uint256):
         """
         Removes liquidity from the pool.
         
@@ -292,11 +274,7 @@ contract SimpleAMM:
     # ========== Swap Functions ==========
     
     @external
-    fn swap(
-        amount0_out: uint256,
-        amount1_out: uint256,
-        to: address
-    ):
+    fn swap(amount0_out: uint256, amount1_out: uint256, to: address):
         """
         Swaps tokens.
         
@@ -353,12 +331,7 @@ contract SimpleAMM:
         emit Sync(self._reserve0, self._reserve1)
     
     @external
-    fn swap_exact_tokens_for_tokens(
-        amount_in: uint256,
-        amount_out_min: uint256,
-        token_in: address,
-        to: address
-    ) -> uint256:
+    fn swap_exact_tokens_for_tokens(amount_in: uint256, amount_out_min: uint256, token_in: address, to: address) -> uint256:
         """
         Swaps exact input tokens for output tokens.
         
@@ -395,7 +368,7 @@ contract SimpleAMM:
     
     fn _mint_liquidity(to: address, amount0: uint256, amount1: uint256) -> uint256:
         """Mints liquidity tokens."""
-        liquidity: uint256
+        liquidity: uint256 = 0
         
         if self._total_liquidity == 0:
             # First liquidity provision

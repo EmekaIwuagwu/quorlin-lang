@@ -580,6 +580,28 @@ impl SolanaCodegen {
                 }
                 Err(CodegenError::UnsupportedFeature(format!("Index {:?}", expr)))
             }
+            Expr::List(items) => {
+                let item_codes: Vec<_> = items.iter().map(|i| self.generate_expression(i)).collect::<Result<_, _>>()?;
+                Ok(format!("vec![{}]", item_codes.join(", ")))
+            }
+            Expr::Tuple(items) => {
+                let item_codes: Vec<_> = items.iter().map(|i| self.generate_expression(i)).collect::<Result<_, _>>()?;
+                Ok(format!("({})", item_codes.join(", ")))
+            }
+            Expr::IfExp { test, body, orelse } => {
+                let test_code = self.generate_expression(test)?;
+                let body_code = self.generate_expression(body)?;
+                let orelse_code = self.generate_expression(orelse)?;
+                Ok(format!("if {} {{ {} }} else {{ {} }}", test_code, body_code, orelse_code))
+            }
+            Expr::UnaryOp(op, operand) => {
+                let operand_code = self.generate_expression(operand)?;
+                match op {
+                    quorlin_parser::UnaryOp::Not => Ok(format!("!{}", operand_code)),
+                    quorlin_parser::UnaryOp::Neg => Ok(format!("-{}", operand_code)),
+                    quorlin_parser::UnaryOp::Pos => Ok(format!("+{}", operand_code)),
+                }
+            }
             _ => Err(CodegenError::UnsupportedFeature(format!("Expression {:?}", expr))),
         }
     }

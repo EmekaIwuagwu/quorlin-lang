@@ -3,6 +3,7 @@ use quorlin_codegen_evm::EvmCodegen;
 use quorlin_codegen_solana::SolanaCodegen;
 use quorlin_codegen_ink::InkCodegen;
 use quorlin_codegen_aptos::AptosCodegen;
+use quorlin_codegen_quorlin::QuorlinCodegen;
 use quorlin_lexer::Lexer;
 use quorlin_parser::parse_module;
 use quorlin_semantics::SemanticAnalyzer;
@@ -141,6 +142,12 @@ pub fn run(
             let codegen = AptosCodegen::default();
             let code = codegen.generate(&module).map_err(|e| format!("Codegen error: {}", e))?;
             (code, "move")
+        }
+        "quorlin" | "bytecode" => {
+            let mut codegen = QuorlinCodegen::new();
+            let bytecode = codegen.generate(&module).map_err(|e| format!("Codegen error: {}", e))?;
+            // Convert bytecode to string for now (in real implementation, write as binary)
+            (String::from_utf8_lossy(&bytecode).to_string(), "qbc")
         }
         _ => {
             return Err(format!("Unknown target: {}", target).into());

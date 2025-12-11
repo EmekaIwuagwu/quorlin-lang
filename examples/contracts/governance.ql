@@ -3,8 +3,65 @@
 
 from std.math import safe_add, safe_sub, safe_mul, safe_div
 from std.time import block_timestamp, block_number, add_days
-from std.log import require, require_not_zero_address, emit_event
+from std.log import require_not_zero_address
 from std.crypto import keccak256
+
+# Structs
+struct Proposal:
+    id: uint256
+    proposer: address
+    eta: uint64  # Execution timestamp
+    targets: list[address]
+    values: list[uint256]
+    signatures: list[str]
+    calldatas: list[bytes]
+    start_block: uint64
+    end_block: uint64
+    for_votes: uint256
+    against_votes: uint256
+    abstain_votes: uint256
+    canceled: bool
+    executed: bool
+    description: str
+
+struct Receipt:
+    has_voted: bool
+    support: uint8  # 0=against, 1=for, 2=abstain
+    votes: uint256
+
+struct Checkpoint:
+    from_block: uint64
+    votes: uint256
+
+# Proposal states
+enum ProposalState:
+    Pending
+    Active
+    Canceled
+    Defeated
+    Succeeded
+    Queued
+    Expired
+    Executed
+
+# Events
+event ProposalCreated(
+    proposal_id: uint256,
+    proposer: address,
+    targets: list[address],
+    values: list[uint256],
+    signatures: list[str],
+    calldatas: list[bytes],
+    start_block: uint64,
+    end_block: uint64,
+    description: str
+)
+event VoteCast(voter: address, proposal_id: uint256, support: uint8, votes: uint256, reason: str)
+event ProposalCanceled(proposal_id: uint256)
+event ProposalQueued(proposal_id: uint256, eta: uint64)
+event ProposalExecuted(proposal_id: uint256)
+event DelegateChanged(delegator: address, from_delegate: address, to_delegate: address)
+event DelegateVotesChanged(delegate: address, previous_balance: uint256, new_balance: uint256)
 
 contract DAOGovernance:
     """
@@ -44,63 +101,6 @@ contract DAOGovernance:
     
     # Vote snapshots
     _vote_snapshots: mapping[uint256, mapping[address, uint256]]
-    
-    # Structs
-    struct Proposal:
-        id: uint256
-        proposer: address
-        eta: uint64  # Execution timestamp
-        targets: list[address]
-        values: list[uint256]
-        signatures: list[str]
-        calldatas: list[bytes]
-        start_block: uint64
-        end_block: uint64
-        for_votes: uint256
-        against_votes: uint256
-        abstain_votes: uint256
-        canceled: bool
-        executed: bool
-        description: str
-    
-    struct Receipt:
-        has_voted: bool
-        support: uint8  # 0=against, 1=for, 2=abstain
-        votes: uint256
-    
-    struct Checkpoint:
-        from_block: uint64
-        votes: uint256
-    
-    # Proposal states
-    enum ProposalState:
-        Pending
-        Active
-        Canceled
-        Defeated
-        Succeeded
-        Queued
-        Expired
-        Executed
-    
-    # Events
-    event ProposalCreated(
-        proposal_id: uint256,
-        proposer: address,
-        targets: list[address],
-        values: list[uint256],
-        signatures: list[str],
-        calldatas: list[bytes],
-        start_block: uint64,
-        end_block: uint64,
-        description: str
-    )
-    event VoteCast(voter: address, proposal_id: uint256, support: uint8, votes: uint256, reason: str)
-    event ProposalCanceled(proposal_id: uint256)
-    event ProposalQueued(proposal_id: uint256, eta: uint64)
-    event ProposalExecuted(proposal_id: uint256)
-    event DelegateChanged(delegator: address, from_delegate: address, to_delegate: address)
-    event DelegateVotesChanged(delegate: address, previous_balance: uint256, new_balance: uint256)
     
     @constructor
     fn __init__(

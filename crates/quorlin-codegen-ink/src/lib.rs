@@ -600,6 +600,28 @@ impl InkCodegen {
                 }
                 Err(CodegenError::UnsupportedFeature(format!("Index {:?}", expr)))
             }
+            Expr::List(items) => {
+                let item_codes: Vec<_> = items.iter().map(|i| self.generate_expression(i, in_constructor)).collect::<Result<_, _>>()?;
+                Ok(format!("vec![{}]", item_codes.join(", ")))
+            }
+            Expr::Tuple(items) => {
+                let item_codes: Vec<_> = items.iter().map(|i| self.generate_expression(i, in_constructor)).collect::<Result<_, _>>()?;
+                Ok(format!("({})", item_codes.join(", ")))
+            }
+            Expr::IfExp { test, body, orelse } => {
+                let test_code = self.generate_expression(test, in_constructor)?;
+                let body_code = self.generate_expression(body, in_constructor)?;
+                let orelse_code = self.generate_expression(orelse, in_constructor)?;
+                Ok(format!("if {} {{ {} }} else {{ {} }}", test_code, body_code, orelse_code))
+            }
+            Expr::UnaryOp(op, operand) => {
+                let operand_code = self.generate_expression(operand, in_constructor)?;
+                match op {
+                    quorlin_parser::UnaryOp::Not => Ok(format!("!{}", operand_code)),
+                    quorlin_parser::UnaryOp::Neg => Ok(format!("-{}", operand_code)),
+                    quorlin_parser::UnaryOp::Pos => Ok(format!("+{}", operand_code)),
+                }
+            }
             _ => Err(CodegenError::UnsupportedFeature(format!("Expression {:?}", expr))),
         }
     }

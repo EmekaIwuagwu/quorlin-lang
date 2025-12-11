@@ -1,0 +1,120 @@
+# Quorlin Bytecode
+# Magic: QBC\0
+# Version: 1.0.0
+
+# Event: ProposalCreated
+#   proposal_id : Simple("uint256")
+#   description : Simple("str")
+#   creator : Simple("address")
+
+# Event: Voted
+#   proposal_id : Simple("uint256")
+#   voter : Simple("address")
+#   vote : Simple("bool")
+
+# Event: ProposalExecuted
+#   proposal_id : Simple("uint256")
+
+# Contract: SimpleVoting
+
+# State: _owner : Simple("address")
+# State: _proposal_count : Simple("uint256")
+# State: _voting_period : Simple("uint256")
+# State: _proposal_descriptions : Mapping(Simple("uint256"), Simple("str"))
+# State: _proposal_yes_votes : Mapping(Simple("uint256"), Simple("uint256"))
+# State: _proposal_no_votes : Mapping(Simple("uint256"), Simple("uint256"))
+# State: _proposal_executed : Mapping(Simple("uint256"), Simple("bool"))
+# State: _has_voted : Mapping(Simple("uint256"), Mapping(Simple("address"), Simple("bool")))
+# State: _voter_weights : Mapping(Simple("address"), Simple("uint256"))
+
+# Function: __init__
+#   Params: 1
+#   Return: None
+FUNC_START
+  ASSIGN Attribute(Ident("self"), "_owner")
+  ASSIGN Attribute(Ident("self"), "_proposal_count")
+  ASSIGN Attribute(Ident("self"), "_voting_period")
+  ASSIGN Index(Attribute(Ident("self"), "_voter_weights"), Attribute(Ident("msg"), "sender"))
+FUNC_END
+
+# Function: get_proposal_count
+#   Params: 0
+#   Return: Some(Simple("uint256"))
+FUNC_START
+  RETURN
+FUNC_END
+
+# Function: get_proposal_votes
+#   Params: 1
+#   Return: Some(Tuple([Simple("uint256"), Simple("uint256")]))
+FUNC_START
+  RETURN
+FUNC_END
+
+# Function: has_voted
+#   Params: 2
+#   Return: Some(Simple("bool"))
+FUNC_START
+  RETURN
+FUNC_END
+
+# Function: get_voter_weight
+#   Params: 1
+#   Return: Some(Simple("uint256"))
+FUNC_START
+  RETURN
+FUNC_END
+
+# Function: create_proposal
+#   Params: 1
+#   Return: None
+FUNC_START
+  REQUIRE Some("Insufficient balance")
+  ASSIGN Ident("proposal_id")
+  ASSIGN Attribute(Ident("self"), "_proposal_count")
+  ASSIGN Index(Attribute(Ident("self"), "_proposal_descriptions"), Ident("proposal_id"))
+  ASSIGN Index(Attribute(Ident("self"), "_proposal_yes_votes"), Ident("proposal_id"))
+  ASSIGN Index(Attribute(Ident("self"), "_proposal_no_votes"), Ident("proposal_id"))
+  ASSIGN Index(Attribute(Ident("self"), "_proposal_executed"), Ident("proposal_id"))
+  EMIT ProposalCreated
+FUNC_END
+
+# Function: vote
+#   Params: 2
+#   Return: None
+FUNC_START
+  REQUIRE Some("Insufficient balance")
+  REQUIRE Some("Insufficient allowance")
+  REQUIRE Some("Insufficient balance")
+  REQUIRE Some("Insufficient balance")
+  ASSIGN Ident("voter_weight")
+  ASSIGN Index(Index(Attribute(Ident("self"), "_has_voted"), Ident("proposal_id")), Attribute(Ident("msg"), "sender"))
+  IF
+  ASSIGN Index(Attribute(Ident("self"), "_proposal_yes_votes"), Ident("proposal_id"))
+  ELSE
+  ASSIGN Index(Attribute(Ident("self"), "_proposal_no_votes"), Ident("proposal_id"))
+  END_IF
+  EMIT Voted
+FUNC_END
+
+# Function: execute_proposal
+#   Params: 1
+#   Return: None
+FUNC_START
+  REQUIRE Some("Insufficient allowance")
+  REQUIRE Some("Insufficient balance")
+  REQUIRE Some("Insufficient balance")
+  REQUIRE Some("Insufficient balance")
+  ASSIGN Index(Attribute(Ident("self"), "_proposal_executed"), Ident("proposal_id"))
+  EMIT ProposalExecuted
+FUNC_END
+
+# Function: set_voter_weight
+#   Params: 2
+#   Return: None
+FUNC_START
+  REQUIRE Some("Insufficient allowance")
+  REQUIRE Some("Cannot send to zero address")
+  ASSIGN Index(Attribute(Ident("self"), "_voter_weights"), Ident("voter"))
+FUNC_END
+

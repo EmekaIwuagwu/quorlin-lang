@@ -1,0 +1,71 @@
+# Quorlin Bytecode
+# Magic: QBC\0
+# Version: 1.0.0
+
+# Event: Incremented
+#   counter : Simple("uint256")
+
+# Event: Decremented
+#   counter : Simple("uint256")
+
+# Contract: Counter
+
+# State: _count : Simple("uint256")
+# State: _owner : Simple("address")
+
+# Function: __init__
+#   Params: 1
+#   Return: None
+FUNC_START
+  ASSIGN Attribute(Ident("self"), "_count")
+  ASSIGN Attribute(Ident("self"), "_owner")
+FUNC_END
+
+# Function: get_count
+#   Params: 0
+#   Return: Some(Simple("uint256"))
+FUNC_START
+  RETURN
+FUNC_END
+
+# Function: get_owner
+#   Params: 0
+#   Return: Some(Simple("address"))
+FUNC_START
+  RETURN
+FUNC_END
+
+# Function: increment
+#   Params: 0
+#   Return: None
+FUNC_START
+  ASSIGN Attribute(Ident("self"), "_count")
+  EMIT Incremented
+FUNC_END
+
+# Function: decrement
+#   Params: 0
+#   Return: None
+FUNC_START
+  REQUIRE Some("Counter cannot go below zero")
+  ASSIGN Attribute(Ident("self"), "_count")
+  EMIT Decremented
+FUNC_END
+
+# Function: add
+#   Params: 1
+#   Return: None
+FUNC_START
+  REQUIRE Some("Only owner can add")
+  ASSIGN Attribute(Ident("self"), "_count")
+  EMIT Incremented
+FUNC_END
+
+# Function: reset
+#   Params: 0
+#   Return: None
+FUNC_START
+  REQUIRE Some("Only owner can reset")
+  ASSIGN Attribute(Ident("self"), "_count")
+FUNC_END
+

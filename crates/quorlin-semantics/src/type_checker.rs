@@ -12,6 +12,11 @@ pub fn types_compatible(expected: &Type, found: &Type) -> bool {
                 return true;
             }
 
+            // Allow unknown type to match anything (for type inference)
+            if e == "unknown" || f == "unknown" {
+                return true;
+            }
+
             // Allow numeric promotions: uint8 -> uint256, etc.
             if is_numeric_type(e) && is_numeric_type(f) {
                 return can_promote(f, e);
@@ -22,6 +27,18 @@ pub fn types_compatible(expected: &Type, found: &Type) -> bool {
         (Type::List(e), Type::List(f)) => types_compatible(e, f),
         (Type::Mapping(ek, ev), Type::Mapping(fk, fv)) => {
             types_compatible(ek, fk) && types_compatible(ev, fv)
+        }
+        (Type::Tuple(e_types), Type::Tuple(f_types)) => {
+            // Tuples must have same number of elements
+            if e_types.len() != f_types.len() {
+                return false;
+            }
+            // All elements must be compatible
+            e_types.iter().zip(f_types.iter()).all(|(e, f)| types_compatible(e, f))
+        }
+        (Type::Optional(e), Type::Optional(f)) => types_compatible(e, f),
+        (Type::FixedArray(e_type, e_size), Type::FixedArray(f_type, f_size)) => {
+            e_size == f_size && types_compatible(e_type, f_type)
         }
         _ => false,
     }

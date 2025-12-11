@@ -174,6 +174,11 @@ pub enum TokenType {
     #[regex(r"0x[0-9a-fA-F_]+", |lex| lex.slice().to_string())]
     HexLiteral(String),
 
+    // Docstrings (triple-quoted strings) - Skip them
+    #[regex(r#""""(?:[^"]|"[^"]|""[^"])*""""#, logos::skip)]
+    #[regex(r"'''(?:[^']|'[^']|''[^'])*'''", logos::skip)]
+    DocStringSkip,
+
     // String literals with double quotes
     #[regex(r#""([^"\\]|\\.)*""#, |lex| {
         let s = lex.slice();
@@ -291,7 +296,7 @@ pub enum TokenType {
     // ═══════════════════════════════════════════════════════════
 
     // Newline (significant in Python-style syntax)
-    #[regex(r"\n")]
+    #[regex(r"\r?\n")]
     Newline,
 
     // Comments (skip) - supports both # and //

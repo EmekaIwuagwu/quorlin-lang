@@ -13,6 +13,7 @@ members = [
     "crates/quorlin-resolver",
     "crates/quorlin-analyzer",
     "crates/quorlin-codegen-aptos",
+    "crates/quorlin-codegen-quorlin",
 ]
 exclude = [
     "ink-test",
