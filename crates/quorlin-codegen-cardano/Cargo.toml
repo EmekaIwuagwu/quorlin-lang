@@ -1,0 +1,16 @@
+[package]
+name = "quorlin-codegen-cardano"
+version = "0.1.0"
+edition = "2021"
+description = "Cardano/Aiken code generator for the Quorlin compiler"
+license = "MIT OR Apache-2.0"
+authors = ["Quorlin Team"]
+repository = "https://github.com/EmekaIwuagwu/quorlin-lang"
+keywords = ["quorlin", "cardano", "aiken", "plutus", "smart-contracts"]
+categories = ["compilers", "cryptography::cryptocurrencies"]
+
+[dependencies]
+quorlin-parser = { path = "../quorlin-parser" }
+thiserror = "1.0"
+
+[dev-dependencies]

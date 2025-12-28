@@ -406,6 +406,9 @@ impl MoveGenerator {
                 let orelse_str = self.generate_expr(orelse)?;
                 Ok(format!("if ({}) {} else {}", test_str, body_str, orelse_str))
             }
+            Expr::FStringLiteral(s) => Ok(format!("string::utf8(b\"{}\")", s)),
+            Expr::Try(expr) => self.generate_expr(expr),
+            Expr::Match { .. } => Err(AptosCodegenError::UnsupportedFeature("match expression".to_string())),
         }
     }
     
@@ -499,6 +502,11 @@ impl MoveGenerator {
                 self.expr_references_self(test) || self.expr_references_self(body) || self.expr_references_self(orelse)
             }
             Expr::UnaryOp(_, op) => self.expr_references_self(op),
+            Expr::FStringLiteral(_) => false,
+            Expr::Try(expr) => self.expr_references_self(expr),
+            Expr::Match { subject, arms } => {
+                self.expr_references_self(subject) || arms.iter().any(|a| self.expr_references_self(&a.body))
+            }
             _ => false,
         }
     }

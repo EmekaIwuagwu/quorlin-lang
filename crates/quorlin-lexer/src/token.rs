@@ -83,6 +83,30 @@ pub enum TokenType {
     #[token("raise")]
     Raise,
 
+    #[token("match")]
+    Match,
+
+    #[token("impl")]
+    Impl,
+
+    #[token("trait")]
+    Trait,
+
+    #[token("pub")]
+    Pub,
+
+    #[token("use")]
+    Use,
+
+    #[token("mod")]
+    Mod,
+
+    #[token("type")]
+    Type,
+
+    #[token("where")]
+    Where,
+
     // ═══════════════════════════════════════════════════════════
     // QUORLIN-SPECIFIC KEYWORDS (Minimal additions)
     // ═══════════════════════════════════════════════════════════
@@ -193,6 +217,20 @@ pub enum TokenType {
     })]
     StringLiteralSingle(String),
 
+    // F-strings (f"...")
+    #[regex(r#"f"([^"\\]|\\.)*""#, |lex| {
+        let s = lex.slice();
+        s[2..s.len()-1].to_string()
+    })]
+    FStringLiteral(String),
+
+    // F-strings with single quotes (f'...')
+    #[regex(r#"f'([^'\\]|\\.)*'"#, |lex| {
+        let s = lex.slice();
+        s[2..s.len()-1].to_string()
+    })]
+    FStringLiteralSingle(String),
+
     // ═══════════════════════════════════════════════════════════
     // OPERATORS & PUNCTUATION (Python-compatible)
     // ═══════════════════════════════════════════════════════════
@@ -290,6 +328,18 @@ pub enum TokenType {
 
     #[token("@")]
     At,
+
+    #[token("?")]
+    Question,
+
+    #[token("|")]
+    Pipe,
+
+    #[token("&")]
+    Ampersand,
+
+    #[token("=>")]
+    FatArrow,
 
     // ═══════════════════════════════════════════════════════════
     // WHITESPACE & INDENTATION

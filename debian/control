@@ -1,0 +1,15 @@
+Source: quorlin
+Section: devel
+Priority: optional
+Maintainer: Quorlin Team <dev@quorlin.org>
+Build-Depends: debhelper (>= 11), cargo, rustc
+Standards-Version: 4.1.3
+
+Package: quorlin
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: The Quorlin Smart Contract Language
+ Quorlin is a system-level blockchain-agnostic programming language that 
+ compiles to EVM Yul, Solana Anchor, Cardano Aiken, and Aptos Move.
+ It features a Pythonic syntax with strong static typing and built-in
+ verification tools.

@@ -1,0 +1,4 @@
+name = "quorlin/cardano-test"
+version = "0.0.0"
+licences = ["Apache-2.0"]
+description = "Generated test for Quorlin Cardano target"

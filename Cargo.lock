@@ -619,9 +619,11 @@ dependencies = [
  "colored",
  "miette",
  "quorlin-codegen-aptos",
+ "quorlin-codegen-cardano",
  "quorlin-codegen-evm",
  "quorlin-codegen-ink",
  "quorlin-codegen-quorlin",
+ "quorlin-codegen-rust",
  "quorlin-codegen-solana",
  "quorlin-common",
  "quorlin-lexer",
@@ -646,6 +648,15 @@ name = "quorlin-codegen-aptos"
 version = "0.1.0"
 dependencies = [
  "quorlin-common",
+ "quorlin-lexer",
+ "quorlin-parser",
+ "thiserror",
+]
+
+[[package]]
+name = "quorlin-codegen-cardano"
+version = "0.1.0"
+dependencies = [
  "quorlin-parser",
  "thiserror",
 ]
@@ -678,6 +689,14 @@ version = "0.1.0"
 dependencies = [
  "quorlin-common",
  "quorlin-parser",
+]
+
+[[package]]
+name = "quorlin-codegen-rust"
+version = "0.1.0"
+dependencies = [
+ "quorlin-parser",
+ "thiserror",
 ]
 
 [[package]]

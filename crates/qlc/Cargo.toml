@@ -19,9 +19,11 @@ quorlin-codegen-solana = { path = "../quorlin-codegen-solana" }
 quorlin-codegen-ink = { path = "../quorlin-codegen-ink" }
 quorlin-codegen-aptos = { path = "../quorlin-codegen-aptos" }
 quorlin-codegen-quorlin = { path = "../quorlin-codegen-quorlin" }
+quorlin-codegen-cardano = { path = "../quorlin-codegen-cardano" }
 quorlin-common = { path = "../quorlin-common" }
 clap = { workspace = true }
 colored = { workspace = true }
 miette = { workspace = true }
 serde_json = { workspace = true }
 serde = { workspace = true }
+quorlin-codegen-rust = { version = "0.1.0", path = "../quorlin-codegen-rust" }

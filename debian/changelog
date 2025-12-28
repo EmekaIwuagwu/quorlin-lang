@@ -1,0 +1,7 @@
+quorlin (0.1.0-1) unstable; urgency=medium
+
+  * Initial release of Quorlin Language Compiler.
+  * Supports EVM, Solana, Cardano, Aptos compilation targets.
+  * Includes Rust Native Backend.
+
+ -- Quorlin Team <dev@quorlin.org>  Sun, 28 Dec 2025 10:00:00 +0100

@@ -4,6 +4,8 @@ use quorlin_codegen_solana::SolanaCodegen;
 use quorlin_codegen_ink::InkCodegen;
 use quorlin_codegen_aptos::AptosCodegen;
 use quorlin_codegen_quorlin::QuorlinCodegen;
+use quorlin_codegen_cardano::CardanoCodegen;
+use quorlin_codegen_rust::RustCodegen;
 use quorlin_lexer::Lexer;
 use quorlin_parser::parse_module;
 use quorlin_semantics::SemanticAnalyzer;
@@ -149,8 +151,18 @@ pub fn run(
             // Convert bytecode to string for now (in real implementation, write as binary)
             (String::from_utf8_lossy(&bytecode).to_string(), "qbc")
         }
+        "cardano" | "aiken" | "plutus" => {
+            let mut codegen = CardanoCodegen::new();
+            let code = codegen.generate(&module).map_err(|e| format!("Codegen error: {}", e))?;
+            (code, "ak")
+        }
+        "rust" | "native" | "system" => {
+            let mut codegen = RustCodegen::new();
+            let code = codegen.generate(&module).map_err(|e| format!("Codegen error: {}", e))?;
+            (code, "rs")
+        }
         _ => {
-            return Err(format!("Unknown target: {}", target).into());
+            return Err(format!("Unknown target: {}. Supported targets: evm, solana, ink, aptos/move, quorlin, cardano, rust", target).into());
         }
     };
 

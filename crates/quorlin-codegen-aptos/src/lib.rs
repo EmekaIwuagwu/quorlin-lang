@@ -44,7 +44,8 @@ impl Default for AptosCodegen {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use quorlin_parser::parse;
+    use quorlin_lexer::Lexer;
+    use quorlin_parser::parse_module;
     
     #[test]
     fn test_simple_contract() {
@@ -59,7 +60,9 @@ contract SimpleStorage:
         return self._value
 "#;
         
-        let module = parse(source).expect("Failed to parse");
+        let lexer = Lexer::new(source);
+        let tokens = lexer.tokenize().expect("Failed to tokenize");
+        let module = parse_module(tokens).expect("Failed to parse");
         let codegen = AptosCodegen::default();
         let move_code = codegen.generate(&module).expect("Failed to generate");
         

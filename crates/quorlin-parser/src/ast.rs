@@ -88,6 +88,8 @@ pub enum Type {
     Optional(Box<Type>),
     /// Tuple: (T1, T2, ...)
     Tuple(Vec<Type>),
+    /// Generic type: Result[T, E], Vec[T]
+    Generic(String, Vec<Type>),
 }
 
 /// Statement
@@ -218,7 +220,34 @@ pub enum Expr {
         body: Box<Expr>,
         orelse: Box<Expr>,
     },
+
+    /// F-String literal
+    FStringLiteral(String),
+
+    /// Error propagation: `expr?`
+    Try(Box<Expr>),
+
+    /// Match expression
+    Match {
+        subject: Box<Expr>,
+        arms: Vec<MatchArm>,
+    },
 }
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct MatchArm {
+    pub pattern: Pattern,
+    pub body: Expr,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum Pattern {
+    Literal(Expr),
+    Ident(String),
+    Wildcard,
+    Variant(String, Vec<Pattern>),
+}
+
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum BinOp {

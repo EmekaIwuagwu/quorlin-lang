@@ -4,7 +4,7 @@
 
 **Write Once, Deploy Everywhere**
 
-A next-generation smart contract language that compiles to EVM, Solana, and Polkadot from a single, Python-inspired codebase.
+A next-generation smart contract language that compiles to EVM, Solana, Polkadot, Aptos, and Cardano from a single, Python-inspired codebase.
 
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/License-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE)
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)]()
@@ -21,7 +21,7 @@ Today's blockchain developers face an impossible choice: write in Solidity for E
 Quorlin solves this with:
 
 - **Python-like syntax** — If you know Python, you already know 90% of Quorlin
-- **Multi-chain compilation** — One `.ql` file → EVM bytecode, Solana BPF, ink! Wasm
+- **Multi-chain compilation** — One `.ql` file → EVM (Yul), Solana (Anchor), Polkadot (ink!), Aptos (Move), Cardano (Aiken)
 - **Security-first** — Built-in reentrancy guards, overflow protection, and static analysis
 - **Zero overhead** — Compiles to native bytecode for each chain, no runtime interpreter
 - **Production-ready** — 100% of example contracts compile successfully to Yul bytecode

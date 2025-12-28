@@ -248,8 +248,11 @@ impl Parser {
             let ident = self.consume_ident("Expected variable name after 'let'")?;
             let target = Expr::Ident(ident);
 
-            self.consume(&TokenType::Colon, "Expected ':' after variable name")?;
-            let type_annotation = Some(self.parse_type()?);
+            let type_annotation = if self.match_token(&TokenType::Colon) {
+                Some(self.parse_type()?)
+            } else {
+                None
+            };
 
             self.consume(&TokenType::Eq, "Expected '=' in let statement")?;
             let value = self.parse_expr()?;
@@ -720,6 +723,8 @@ impl Parser {
                 let index = self.parse_expr()?;
                 self.consume(&TokenType::RBracket, "Expected ']'")?;
                 expr = Expr::Index(Box::new(expr), Box::new(index));
+            } else if self.match_token(&TokenType::Question) {
+                expr = Expr::Try(Box::new(expr));
             } else {
                 break;
             }
@@ -741,6 +746,22 @@ impl Parser {
                     self.advance();
                     Ok(Expr::StringLiteral(val))
                 }
+                TokenType::StringLiteralSingle(s) => {
+                    let val = s.clone();
+                    self.advance();
+                    Ok(Expr::StringLiteral(val))
+                }
+                TokenType::FStringLiteral(s) => {
+                    let val = s.clone();
+                    self.advance();
+                    Ok(Expr::FStringLiteral(val))
+                }
+                TokenType::FStringLiteralSingle(s) => {
+                    let val = s.clone();
+                    self.advance();
+                    Ok(Expr::FStringLiteral(val))
+                }
+                TokenType::Match => self.parse_match_expr(),
                 TokenType::True => {
                     self.advance();
                     Ok(Expr::BoolLiteral(true))
@@ -813,6 +834,20 @@ impl Parser {
                         Ok(first)
                     }
                 }
+                TokenType::LBracket => {
+                    self.advance();
+                    let mut items = Vec::new();
+                    if !self.check(&TokenType::RBracket) {
+                        loop {
+                            items.push(self.parse_expr()?);
+                            if !self.match_token(&TokenType::Comma) {
+                                break;
+                            }
+                        }
+                    }
+                    self.consume(&TokenType::RBracket, "Expected ']'")?;
+                    Ok(Expr::List(items))
+                }
                 _ => Err(ParseError::UnexpectedToken(
                     self.current,
                     format!("Expected expression, found {:?}", token.token_type),
@@ -872,7 +907,20 @@ impl Parser {
                 TokenType::Ident(name) => {
                     let name = name.clone();
                     self.advance();
-                    Ok(Type::Simple(name))
+                    // Check for generic arguments [T, U]
+                    if self.match_token(&TokenType::LBracket) {
+                        let mut args = Vec::new();
+                        loop {
+                            args.push(self.parse_type()?);
+                            if !self.match_token(&TokenType::Comma) {
+                                break;
+                            }
+                        }
+                        self.consume(&TokenType::RBracket, "Expected ']'")?;
+                        Ok(Type::Generic(name, args))
+                    } else {
+                        Ok(Type::Simple(name))
+                    }
                 }
                 TokenType::LParen => {
                     self.advance();
@@ -1121,5 +1169,74 @@ impl Parser {
         self.skip_newlines();
 
         Ok(Item::Error(ErrorDecl { name, params }))
+    }
+    fn parse_match_expr(&mut self) -> Result<Expr, ParseError> {
+        self.consume(&TokenType::Match, "Expected 'match'")?;
+        let subject = self.parse_expr()?;
+        self.consume(&TokenType::LBrace, "Expected '{'")?;
+        self.skip_newlines();
+
+        let mut arms = Vec::new();
+        while !self.check(&TokenType::RBrace) && !self.is_at_end() {
+             let pattern = self.parse_pattern()?;
+             self.consume(&TokenType::FatArrow, "Expected '=>'")?;
+             let body = self.parse_expr()?;
+             
+             // Optional comma
+             self.match_token(&TokenType::Comma);
+             self.skip_newlines();
+
+             arms.push(MatchArm { pattern, body });
+        }
+
+        self.consume(&TokenType::RBrace, "Expected '}'")?;
+        Ok(Expr::Match {
+            subject: Box::new(subject),
+            arms,
+        })
+    }
+
+    fn parse_pattern(&mut self) -> Result<Pattern, ParseError> {
+        // Check for wildcard '_' which is tokenized as Ident("_")
+        let is_wildcard = if let Some(TokenType::Ident(name)) = self.peek().map(|t| &t.token_type) {
+             name == "_"
+        } else {
+             false
+        };
+
+        if is_wildcard {
+            self.advance();
+            Ok(Pattern::Wildcard)
+        } else if let Some(token) = self.peek() {
+             match &token.token_type {
+                TokenType::Ident(name) => {
+                    let name = name.clone();
+                    self.advance();
+                    // Check if it's a Variant(args...)
+                    if self.match_token(&TokenType::LParen) {
+                         let mut args = Vec::new();
+                         if !self.check(&TokenType::RParen) {
+                             loop {
+                                 args.push(self.parse_pattern()?);
+                                 if !self.match_token(&TokenType::Comma) {
+                                     break;
+                                 }
+                             }
+                         }
+                         self.consume(&TokenType::RParen, "Expected ')'")?;
+                         Ok(Pattern::Variant(name, args))
+                    } else {
+                        Ok(Pattern::Ident(name))
+                    }
+                }
+                _ => {
+                    // Try parsing as literal expression
+                    let expr = self.parse_primary()?; // primitive literals
+                    Ok(Pattern::Literal(expr))
+                }
+             }
+        } else {
+             Err(ParseError::UnexpectedEof)
+        }
     }
 }

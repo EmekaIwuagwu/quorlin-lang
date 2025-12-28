@@ -224,6 +224,16 @@ impl Linter {
                 self.find_magic_number(left).or_else(|| self.find_magic_number(right))
             }
             
+            Expr::Try(expr) => self.find_magic_number(expr),
+            Expr::Match { arms, .. } => {
+                arms.iter().find_map(|arm| self.find_magic_number(&arm.body))
+            }
+            Expr::IfExp { test, body, orelse } => {
+                 self.find_magic_number(test)
+                    .or_else(|| self.find_magic_number(body))
+                    .or_else(|| self.find_magic_number(orelse))
+            }
+            
             _ => None,
         }
     }
@@ -321,6 +331,17 @@ impl Linter {
             
             Expr::List(items) | Expr::Tuple(items) => {
                 items.iter().any(|item| self.expr_uses_variable(item, var_name))
+            }
+            
+            Expr::Try(expr) => self.expr_uses_variable(expr, var_name),
+            Expr::Match { subject, arms } => {
+                self.expr_uses_variable(subject, var_name) ||
+                arms.iter().any(|arm| self.expr_uses_variable(&arm.body, var_name))
+            }
+            Expr::IfExp { test, body, orelse } => {
+                self.expr_uses_variable(test, var_name) ||
+                self.expr_uses_variable(body, var_name) ||
+                self.expr_uses_variable(orelse, var_name)
             }
             
             _ => false,

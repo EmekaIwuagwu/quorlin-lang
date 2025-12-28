@@ -217,6 +217,16 @@ impl GasEstimator {
                 let orelse_gas = self.estimate_expression(orelse);
                 test_gas + body_gas.max(orelse_gas) + 50 // Add overhead for conditional logic
             }
+            Expr::FStringLiteral(s) => 10 + (s.len() as u64 * 3),
+            Expr::Try(expr) => self.estimate_expression(expr) + 50,
+            Expr::Match { subject, arms } => {
+                let subject_gas = self.estimate_expression(subject);
+                let arms_gas = arms.iter()
+                     .map(|a| self.estimate_expression(&a.body))
+                     .max()
+                     .unwrap_or(0);
+                subject_gas + arms_gas + 50
+            }
         }
     }
 }

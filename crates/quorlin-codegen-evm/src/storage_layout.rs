@@ -83,6 +83,9 @@ impl StorageLayout {
             Type::Tuple(types) => {
                 types.iter().map(|t| self.calculate_type_size(t)).sum()
             }
+
+            // Generics take 1 slot by default (pointer/unknown)
+            Type::Generic(_, _) => 1,
         }
     }
 

@@ -5,6 +5,10 @@ use quorlin_parser::Type;
 
 /// Check if two types are compatible
 pub fn types_compatible(expected: &Type, found: &Type) -> bool {
+    // Allow unknown type to match anything (for type inference)
+    if let Type::Simple(s) = expected { if s == "unknown" { return true; } }
+    if let Type::Simple(s) = found { if s == "unknown" { return true; } }
+
     match (expected, found) {
         (Type::Simple(e), Type::Simple(f)) => {
             // Exact match
@@ -12,8 +16,8 @@ pub fn types_compatible(expected: &Type, found: &Type) -> bool {
                 return true;
             }
 
-            // Allow unknown type to match anything (for type inference)
-            if e == "unknown" || f == "unknown" {
+            // Alias string and str
+            if (e == "string" && f == "str") || (e == "str" && f == "string") {
                 return true;
             }
 
@@ -39,6 +43,16 @@ pub fn types_compatible(expected: &Type, found: &Type) -> bool {
         (Type::Optional(e), Type::Optional(f)) => types_compatible(e, f),
         (Type::FixedArray(e_type, e_size), Type::FixedArray(f_type, f_size)) => {
             e_size == f_size && types_compatible(e_type, f_type)
+        }
+        (Type::Generic(n1, a1), Type::Generic(n2, a2)) => {
+            n1 == n2 && a1.len() == a2.len() && a1.iter().zip(a2.iter()).all(|(t1, t2)| types_compatible(t1, t2))
+        }
+        // Bidirectional compatibility between Generic("List") and List(...)
+        (Type::Generic(n, args), Type::List(elem)) => {
+            n == "List" && args.len() == 1 && types_compatible(&args[0], elem)
+        }
+        (Type::List(elem), Type::Generic(n, args)) => {
+            n == "List" && args.len() == 1 && types_compatible(elem, &args[0])
         }
         _ => false,
     }

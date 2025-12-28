@@ -1,0 +1,12 @@
+{
+  "name": "quorlin-hardhat-test",
+  "version": "1.0.0",
+  "description": "Generated test for Quorlin EVM target",
+  "scripts": {
+    "test": "hardhat test"
+  },
+  "devDependencies": {
+    "hardhat": "^2.19.0",
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0"
+  }
+}

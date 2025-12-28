@@ -268,6 +268,18 @@ impl TypeChecker {
                 // In a more sophisticated type system, we'd check that body and orelse have compatible types
                 self.infer_type(body)
             }
+            
+            Expr::FStringLiteral(_) => Type::Simple("string".to_string()),
+            
+            Expr::Try(expr) => self.infer_type(expr),
+            
+            Expr::Match { subject: _, arms } => {
+                if arms.is_empty() {
+                    Type::Simple("unknown".to_string())
+                } else {
+                    self.infer_type(&arms[0].body)
+                }
+            }
         }
     }
     

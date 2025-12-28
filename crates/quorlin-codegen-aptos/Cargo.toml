@@ -7,3 +7,6 @@ edition = "2021"
 quorlin-parser = { path = "../quorlin-parser" }
 quorlin-common = { path = "../quorlin-common" }
 thiserror = { workspace = true }
+
+[dev-dependencies]
+quorlin-lexer = { path = "../quorlin-lexer" }

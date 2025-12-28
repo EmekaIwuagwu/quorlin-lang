@@ -630,6 +630,26 @@ impl SemanticAnalyzer {
                 
                 Ok(body_type)
             }
+            Expr::FStringLiteral(_) => Ok(Type::Simple("str".to_string())),
+            Expr::Try(inner) => {
+                 let inner_type = self.check_expression(inner)?;
+                 // Assuming Try unwraps or propagates, result is inner type
+                 Ok(inner_type) 
+            }
+            Expr::Match { subject, arms } => {
+                let _subject_type = self.check_expression(subject)?;
+                // Check arms consistency
+                if arms.is_empty() {
+                    return Ok(Type::Simple("unknown".to_string()));
+                }
+                let first_arm_type = self.check_expression(&arms[0].body)?;
+                for arm in &arms[1..] {
+                    let arm_type = self.check_expression(&arm.body)?;
+                    // check_type_compatibility(target, value) -> checks if value compatible with target
+                    type_checker::check_type_compatibility(&first_arm_type, &arm_type)?;
+                }
+                Ok(first_arm_type)
+            }
         }
     }
 

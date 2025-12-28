@@ -155,6 +155,9 @@ impl SecurityAnalyzer {
                 self.has_unsafe_arithmetic(function)
             }
             
+            Expr::Try(expr) => self.has_unsafe_arithmetic(expr),
+            Expr::Match { arms, .. } => arms.iter().any(|arm| self.has_unsafe_arithmetic(&arm.body)),
+            
             _ => false,
         }
     }
@@ -302,6 +305,9 @@ impl SecurityAnalyzer {
             Expr::BinOp(left, _, right) => {
                 self.expr_uses_timestamp(left) || self.expr_uses_timestamp(right)
             }
+            
+            Expr::Try(expr) => self.expr_uses_timestamp(expr),
+            Expr::Match { arms, .. } => arms.iter().any(|arm| self.expr_uses_timestamp(&arm.body)),
             
             _ => false,
         }

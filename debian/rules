@@ -1,0 +1,16 @@
+#!/usr/bin/make -f
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+
+%:
+	dh $@
+
+override_dh_auto_build:
+	cargo build --release --workspace
+
+override_dh_auto_test:
+	# Tests are run separately
+	echo "Skipping tests during package build"
+
+override_dh_install:
+	mkdir -p debian/quorlin/usr/bin
+	cp target/release/qlc debian/quorlin/usr/bin/quorlin

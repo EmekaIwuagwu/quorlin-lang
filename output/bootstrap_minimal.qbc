@@ -1,0 +1,342 @@
+# Quorlin Bytecode
+# Magic: QBC\0
+# Version: 1.0.0
+
+# Contract: TokenKind
+
+# State: IDENTIFIER : Simple("uint256")
+# State: INT_LITERAL : Simple("uint256")
+# State: STRING_LITERAL : Simple("uint256")
+# State: KEYWORD : Simple("uint256")
+# State: OPERATOR : Simple("uint256")
+# State: NEWLINE : Simple("uint256")
+# State: INDENT : Simple("uint256")
+# State: DEDENT : Simple("uint256")
+# State: EOF : Simple("uint256")
+
+# Function: __init__
+#   Params: 0
+#   Return: None
+FUNC_START
+  ASSIGN Attribute(Ident("self"), "IDENTIFIER")
+  ASSIGN Attribute(Ident("self"), "INT_LITERAL")
+  ASSIGN Attribute(Ident("self"), "STRING_LITERAL")
+  ASSIGN Attribute(Ident("self"), "KEYWORD")
+  ASSIGN Attribute(Ident("self"), "OPERATOR")
+  ASSIGN Attribute(Ident("self"), "NEWLINE")
+  ASSIGN Attribute(Ident("self"), "INDENT")
+  ASSIGN Attribute(Ident("self"), "DEDENT")
+  ASSIGN Attribute(Ident("self"), "EOF")
+FUNC_END
+
+# Contract: SimpleLexer
+
+# State: source_hash : Simple("uint256")
+# State: position : Simple("uint256")
+# State: line : Simple("uint256")
+# State: column : Simple("uint256")
+# State: token_count : Simple("uint256")
+
+# Function: __init__
+#   Params: 1
+#   Return: None
+FUNC_START
+  ASSIGN Attribute(Ident("self"), "source_hash")
+  ASSIGN Attribute(Ident("self"), "position")
+  ASSIGN Attribute(Ident("self"), "line")
+  ASSIGN Attribute(Ident("self"), "column")
+  ASSIGN Attribute(Ident("self"), "token_count")
+FUNC_END
+
+# Function: advance
+#   Params: 0
+#   Return: Some(Simple("uint256"))
+FUNC_START
+  ASSIGN Attribute(Ident("self"), "position")
+  ASSIGN Attribute(Ident("self"), "column")
+  RETURN
+FUNC_END
+
+# Function: new_line
+#   Params: 0
+#   Return: None
+FUNC_START
+  ASSIGN Attribute(Ident("self"), "line")
+  ASSIGN Attribute(Ident("self"), "column")
+FUNC_END
+
+# Function: emit_token
+#   Params: 1
+#   Return: Some(Simple("uint256"))
+FUNC_START
+  ASSIGN Attribute(Ident("self"), "token_count")
+  RETURN
+FUNC_END
+
+# Function: get_position
+#   Params: 0
+#   Return: Some(Simple("uint256"))
+FUNC_START
+  RETURN
+FUNC_END
+
+# Function: get_line
+#   Params: 0
+#   Return: Some(Simple("uint256"))
+FUNC_START
+  RETURN
+FUNC_END
+
+# Function: get_column
+#   Params: 0
+#   Return: Some(Simple("uint256"))
+FUNC_START
+  RETURN
+FUNC_END
+
+# Function: get_token_count
+#   Params: 0
+#   Return: Some(Simple("uint256"))
+FUNC_START
+  RETURN
+FUNC_END
+
+# Contract: SimpleParser
+
+# State: token_index : Simple("uint256")
+# State: token_count : Simple("uint256")
+# State: error_count : Simple("uint256")
+# State: ast_node_count : Simple("uint256")
+
+# Function: __init__
+#   Params: 1
+#   Return: None
+FUNC_START
+  ASSIGN Attribute(Ident("self"), "token_index")
+  ASSIGN Attribute(Ident("self"), "token_count")
+  ASSIGN Attribute(Ident("self"), "error_count")
+  ASSIGN Attribute(Ident("self"), "ast_node_count")
+FUNC_END
+
+# Function: consume_token
+#   Params: 0
+#   Return: Some(Simple("uint256"))
+FUNC_START
+  IF
+  ASSIGN Attribute(Ident("self"), "token_index")
+  END_IF
+  RETURN
+FUNC_END
+
+# Function: create_node
+#   Params: 1
+#   Return: Some(Simple("uint256"))
+FUNC_START
+  ASSIGN Attribute(Ident("self"), "ast_node_count")
+  RETURN
+FUNC_END
+
+# Function: report_error
+#   Params: 0
+#   Return: None
+FUNC_START
+  ASSIGN Attribute(Ident("self"), "error_count")
+FUNC_END
+
+# Function: at_end
+#   Params: 0
+#   Return: Some(Simple("bool"))
+FUNC_START
+  RETURN
+FUNC_END
+
+# Function: get_node_count
+#   Params: 0
+#   Return: Some(Simple("uint256"))
+FUNC_START
+  RETURN
+FUNC_END
+
+# Function: has_errors
+#   Params: 0
+#   Return: Some(Simple("bool"))
+FUNC_START
+  RETURN
+FUNC_END
+
+# Contract: SimpleCodeGen
+
+# State: output_size : Simple("uint256")
+# State: function_count : Simple("uint256")
+# State: storage_slots : Simple("uint256")
+
+# Function: __init__
+#   Params: 0
+#   Return: None
+FUNC_START
+  ASSIGN Attribute(Ident("self"), "output_size")
+  ASSIGN Attribute(Ident("self"), "function_count")
+  ASSIGN Attribute(Ident("self"), "storage_slots")
+FUNC_END
+
+# Function: emit_function
+#   Params: 1
+#   Return: None
+FUNC_START
+  ASSIGN Attribute(Ident("self"), "function_count")
+  ASSIGN Attribute(Ident("self"), "output_size")
+FUNC_END
+
+# Function: allocate_storage
+#   Params: 0
+#   Return: Some(Simple("uint256"))
+FUNC_START
+  ASSIGN Ident("current_slot")
+  ASSIGN Attribute(Ident("self"), "storage_slots")
+  RETURN
+FUNC_END
+
+# Function: emit_opcode
+#   Params: 1
+#   Return: None
+FUNC_START
+  ASSIGN Attribute(Ident("self"), "output_size")
+FUNC_END
+
+# Function: get_output_size
+#   Params: 0
+#   Return: Some(Simple("uint256"))
+FUNC_START
+  RETURN
+FUNC_END
+
+# Function: get_function_count
+#   Params: 0
+#   Return: Some(Simple("uint256"))
+FUNC_START
+  RETURN
+FUNC_END
+
+# Contract: BootstrapCompiler
+
+# State: source_hash : Simple("uint256")
+# State: tokens_generated : Simple("uint256")
+# State: position : Simple("uint256")
+# State: line : Simple("uint256")
+# State: column : Simple("uint256")
+# State: ast_nodes : Simple("uint256")
+# State: token_index : Simple("uint256")
+# State: error_count : Simple("uint256")
+# State: output_size : Simple("uint256")
+# State: function_count : Simple("uint256")
+# State: storage_slots : Simple("uint256")
+# State: compilation_status : Simple("uint256")
+
+# Function: __init__
+#   Params: 0
+#   Return: None
+FUNC_START
+  ASSIGN Attribute(Ident("self"), "source_hash")
+  ASSIGN Attribute(Ident("self"), "tokens_generated")
+  ASSIGN Attribute(Ident("self"), "position")
+  ASSIGN Attribute(Ident("self"), "line")
+  ASSIGN Attribute(Ident("self"), "column")
+  ASSIGN Attribute(Ident("self"), "ast_nodes")
+  ASSIGN Attribute(Ident("self"), "token_index")
+  ASSIGN Attribute(Ident("self"), "error_count")
+  ASSIGN Attribute(Ident("self"), "output_size")
+  ASSIGN Attribute(Ident("self"), "function_count")
+  ASSIGN Attribute(Ident("self"), "storage_slots")
+  ASSIGN Attribute(Ident("self"), "compilation_status")
+FUNC_END
+
+# Function: compile
+#   Params: 1
+#   Return: Some(Simple("uint256"))
+FUNC_START
+  ASSIGN Attribute(Ident("self"), "source_hash")
+  ASSIGN Attribute(Ident("self"), "position")
+  ASSIGN Attribute(Ident("self"), "line")
+  ASSIGN Attribute(Ident("self"), "column")
+  ASSIGN Attribute(Ident("self"), "tokens_generated")
+  ASSIGN Attribute(Ident("self"), "ast_nodes")
+  ASSIGN Attribute(Ident("self"), "token_index")
+  ASSIGN Attribute(Ident("self"), "error_count")
+  ASSIGN Attribute(Ident("self"), "output_size")
+  ASSIGN Attribute(Ident("self"), "function_count")
+  ASSIGN Attribute(Ident("self"), "storage_slots")
+  EXPR Call(Attribute(Ident("self"), "emit_token"), [IntLiteral("0")])
+  EXPR Call(Attribute(Ident("self"), "emit_token"), [IntLiteral("1")])
+  EXPR Call(Attribute(Ident("self"), "emit_token"), [IntLiteral("2")])
+  EXPR Call(Attribute(Ident("self"), "create_node"), [IntLiteral("1")])
+  EXPR Call(Attribute(Ident("self"), "create_node"), [IntLiteral("2")])
+  IF
+  ASSIGN Attribute(Ident("self"), "compilation_status")
+  RETURN
+  END_IF
+  ASSIGN Attribute(Ident("self"), "function_count")
+  ASSIGN Attribute(Ident("self"), "output_size")
+  ASSIGN Attribute(Ident("self"), "storage_slots")
+  ASSIGN Attribute(Ident("self"), "compilation_status")
+  RETURN
+FUNC_END
+
+# Function: emit_token
+#   Params: 1
+#   Return: None
+FUNC_START
+  ASSIGN Attribute(Ident("self"), "tokens_generated")
+  ASSIGN Attribute(Ident("self"), "position")
+  ASSIGN Attribute(Ident("self"), "column")
+FUNC_END
+
+# Function: create_node
+#   Params: 1
+#   Return: None
+FUNC_START
+  ASSIGN Attribute(Ident("self"), "ast_nodes")
+  ASSIGN Attribute(Ident("self"), "token_index")
+FUNC_END
+
+# Function: get_tokens
+#   Params: 0
+#   Return: Some(Simple("uint256"))
+FUNC_START
+  RETURN
+FUNC_END
+
+# Function: get_ast_nodes
+#   Params: 0
+#   Return: Some(Simple("uint256"))
+FUNC_START
+  RETURN
+FUNC_END
+
+# Function: get_output_size
+#   Params: 0
+#   Return: Some(Simple("uint256"))
+FUNC_START
+  RETURN
+FUNC_END
+
+# Function: get_status
+#   Params: 0
+#   Return: Some(Simple("uint256"))
+FUNC_START
+  RETURN
+FUNC_END
+
+# Function: get_function_count
+#   Params: 0
+#   Return: Some(Simple("uint256"))
+FUNC_START
+  RETURN
+FUNC_END
+
+# Function: get_storage_slots
+#   Params: 0
+#   Return: Some(Simple("uint256"))
+FUNC_START
+  RETURN
+FUNC_END
+

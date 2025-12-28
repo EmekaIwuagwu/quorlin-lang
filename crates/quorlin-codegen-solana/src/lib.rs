@@ -181,6 +181,10 @@ impl SolanaCodegen {
                 let type_strs: Vec<_> = types.iter().map(|t| self.map_type(t)).collect();
                 format!("({})", type_strs.join(", "))
             }
+            Type::Generic(name, args) => {
+                let inner_types: Vec<_> = args.iter().map(|t| self.map_type(t)).collect();
+                format!("{}<{}>", name, inner_types.join(", "))
+            }
         }
     }
 
@@ -607,7 +611,7 @@ impl SolanaCodegen {
     }
 
     /// Check if value expression references the assignment target (to avoid borrow checker issues)
-    fn value_references_target(&self, value: &Expr, target: &Expr, index: &Expr) -> bool {
+    fn value_references_target(&self, value: &Expr, _target: &Expr, _index: &Expr) -> bool {
         // For now, conservatively return true for any Call expression (safe_add, safe_sub)
         // that might reference the target mapping
         match value {

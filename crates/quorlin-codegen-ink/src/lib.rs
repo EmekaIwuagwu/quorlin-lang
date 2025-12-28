@@ -193,6 +193,10 @@ impl InkCodegen {
                 let type_strs: Vec<_> = types.iter().map(|t| self.map_type(t)).collect();
                 format!("({})", type_strs.join(", "))
             }
+            Type::Generic(name, args) => {
+                let inner_types: Vec<_> = args.iter().map(|t| self.map_type(t)).collect();
+                format!("{}<{}>", name, inner_types.join(", "))
+            }
         }
     }
 
@@ -645,7 +649,7 @@ mod tests {
     #[test]
     fn test_type_mapping() {
         let codegen = InkCodegen::new();
-        assert_eq!(codegen.map_type(&Type::Simple("uint256".to_string())), "U256");
+        assert_eq!(codegen.map_type(&Type::Simple("uint256".to_string())), "u128"); // ink! v5: uses u128 for simplicity
         assert_eq!(codegen.map_type(&Type::Simple("address".to_string())), "AccountId");
         assert_eq!(codegen.map_type(&Type::Simple("bool".to_string())), "bool");
     }

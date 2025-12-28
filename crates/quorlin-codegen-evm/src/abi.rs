@@ -175,6 +175,10 @@ fn type_to_abi_string(typ: &Type) -> String {
             let type_strs: Vec<String> = types.iter().map(type_to_abi_string).collect();
             format!("({})", type_strs.join(","))
         }
+        Type::Generic(name, args) => {
+            let arg_strs: Vec<String> = args.iter().map(type_to_abi_string).collect();
+            format!("{}<{}>", name, arg_strs.join(","))
+        }
     }
 }
 

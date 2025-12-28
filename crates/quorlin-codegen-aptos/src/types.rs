@@ -35,6 +35,12 @@ impl TypeMapper {
                 let inner_type = Self::to_move_type(inner)?;
                 Ok(format!("vector<{}> /* size: {} */", inner_type, size))
             }
+            Type::Generic(name, args) => {
+                let inner_types: Result<Vec<_>, _> = args.iter()
+                    .map(|t| Self::to_move_type(t))
+                    .collect();
+                Ok(format!("{}<{}>", name, inner_types?.join(", ")))
+            }
         }
     }
     
@@ -88,6 +94,7 @@ impl TypeMapper {
             Type::Optional(_) => Ok("option::none()".to_string()),
             Type::Tuple(_) => Ok("()".to_string()),
             Type::FixedArray(_, _) => Ok("vector::empty()".to_string()),
+            Type::Generic(_, _) => Ok("/* generic default */".to_string()),
         }
     }
     
